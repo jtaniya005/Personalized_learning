@@ -12,6 +12,14 @@ final ValueNotifier<bool> isDarkNotifier = ValueNotifier(false);
 /// navigation — the same mechanism Theme uses, just for text.
 final ValueNotifier<String> languageNotifier = ValueNotifier('en');
 
+// Study preferences and notification settings — read locally within
+// Settings/Home, no app-wide propagation needed (unlike theme/language).
+final ValueNotifier<int> dailyGoalMinutes = ValueNotifier(30);
+final ValueNotifier<String> buddyTone = ValueNotifier('friendly'); // friendly | strict | motivational
+final ValueNotifier<bool> dailyReminderOn = ValueNotifier(true);
+final ValueNotifier<String> reminderTime = ValueNotifier('7:00 PM');
+final ValueNotifier<bool> streakAlertOn = ValueNotifier(true);
+
 /// Inherited wrapper around [languageNotifier]. Placed once, high up,
 /// via MaterialApp's `builder` — so it sits above the Navigator and
 /// survives route pushes/pops untouched.
@@ -57,7 +65,7 @@ final Map<String, Map<String, String>> _strings = {
   },
 
   // Auth choice
-  'auth_tagline': {'en': 'Your personal mentor', 'hi': 'आपका पर्सनल मेंटर'},
+  'auth_tagline': {'en': 'Your personal mentor for Class 10 & 12', 'hi': 'क्लास 10 और 12 के लिए आपका पर्सनल मेंटर'},
   'auth_login': {'en': 'Log in', 'hi': 'लॉग इन करें'},
   'auth_new': {'en': 'Create account', 'hi': 'खाता बनाएं'},
 
@@ -147,10 +155,52 @@ final Map<String, Map<String, String>> _strings = {
   'lets_start': {'en': "Let's start", 'hi': 'शुरू करें'},
   'later': {'en': 'Later', 'hi': 'बाद में'},
 
-  // Settings
+  // Settings — appearance
   'settings_title': {'en': 'Settings', 'hi': 'सेटिंग्स'},
   'dark_mode': {'en': 'Dark mode', 'hi': 'डार्क मोड'},
   'dark_mode_sub': {'en': 'Easier on the eyes at night', 'hi': 'रात में आँखों के लिए आरामदायक'},
   'app_language': {'en': 'App language', 'hi': 'ऐप की भाषा'},
   'app_language_sub': {'en': 'Changes text across the whole app', 'hi': 'पूरे ऐप का टेक्स्ट बदलता है'},
+  'appearance': {'en': 'APPEARANCE', 'hi': 'रूप-रंग'},
+
+  // Settings — profile
+  'profile': {'en': 'PROFILE', 'hi': 'प्रोफ़ाइल'},
+  'edit_profile': {'en': 'Edit profile', 'hi': 'प्रोफ़ाइल संपादित करें'},
+  'edit_profile_title': {'en': 'Edit profile', 'hi': 'प्रोफ़ाइल संपादित करें'},
+  'save': {'en': 'Save', 'hi': 'सेव करें'},
+  'cancel': {'en': 'Cancel', 'hi': 'रद्द करें'},
+  'logout': {'en': 'Log out', 'hi': 'लॉग आउट'},
+  'logout_confirm_title': {'en': 'Log out?', 'hi': 'लॉग आउट करें?'},
+  'logout_confirm_body': {
+    'en': "You'll need to log in again to continue.",
+    'hi': 'जारी रखने के लिए आपको फिर से लॉग इन करना होगा।',
+  },
+
+  // Settings — notifications
+  'notifications': {'en': 'NOTIFICATIONS', 'hi': 'सूचनाएं'},
+  'daily_reminder': {'en': 'Daily reminder', 'hi': 'रोज़ाना रिमाइंडर'},
+  'daily_reminder_sub': {'en': 'Buddy nudges you to study', 'hi': 'बडी आपको पढ़ने के लिए याद दिलाता है'},
+  'reminder_time': {'en': 'Reminder time', 'hi': 'रिमाइंडर का समय'},
+  'streak_alert': {'en': 'Streak alerts', 'hi': 'स्ट्रीक अलर्ट'},
+  'streak_alert_sub': {
+    'en': "Get notified before you lose your streak",
+    'hi': 'स्ट्रीक टूटने से पहले सूचना पाएं',
+  },
+
+  // Settings — study preferences
+  'study_prefs': {'en': 'STUDY PREFERENCES', 'hi': 'अध्ययन प्राथमिकताएं'},
+  'daily_goal': {'en': 'Daily study goal', 'hi': 'दैनिक अध्ययन लक्ष्य'},
+  'min_per_day': {'en': 'min / day', 'hi': 'मिनट / दिन'},
+  'buddy_tone': {'en': "Buddy's tone", 'hi': 'बडी का अंदाज़'},
+  'tone_friendly': {'en': 'Friendly', 'hi': 'दोस्ताना'},
+  'tone_strict': {'en': 'Strict', 'hi': 'सख्त'},
+  'tone_motivational': {'en': 'Motivational', 'hi': 'प्रेरक'},
+
+  // Settings — about & help
+  'about_help': {'en': 'ABOUT & HELP', 'hi': 'ऐप और सहायता'},
+  'version': {'en': 'Version', 'hi': 'वर्शन'},
+  'rate_app': {'en': 'Rate the app', 'hi': 'ऐप को रेट करें'},
+  'send_feedback': {'en': 'Send feedback', 'hi': 'फीडबैक भेजें'},
+  'contact_support': {'en': 'Contact support', 'hi': 'सहायता से संपर्क करें'},
+  'terms_privacy': {'en': 'Terms & Privacy Policy', 'hi': 'नियम और गोपनीयता नीति'},
 };

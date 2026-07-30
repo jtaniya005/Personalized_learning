@@ -245,11 +245,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 child: Container(
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [AppColors.ink, const Color(0xFF34424C)],
+                      colors: [AppColors.ink, Color(0xFF34424C)],
                     ),
                     shape: BoxShape.circle,
                   ),

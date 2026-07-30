@@ -73,7 +73,7 @@ class ProgressScreen extends StatelessWidget {
         NotebookCard(
           holeCount: 5,
           child: SizedBox(
-            height: 160,
+            height: 130,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: mockWeekActivity.map((d) {

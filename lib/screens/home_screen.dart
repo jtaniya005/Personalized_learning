@@ -29,6 +29,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int navIndex = 0;
+  late int studentClass = widget.studentClass;
+  late String studentName = widget.studentName;
+  late int avatarIndex = widget.avatarIndex;
+
+  void _openSettings() async {
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(
+          studentClass: studentClass,
+          studentName: studentName,
+          avatarIndex: avatarIndex,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        studentName = result['name'] as String;
+        avatarIndex = result['avatarIndex'] as int;
+        studentClass = result['studentClass'] as int;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final pages = [
       _HomeBody(
-        studentClass: widget.studentClass,
-        studentName: widget.studentName,
-        avatarIndex: widget.avatarIndex,
+        studentClass: studentClass,
+        studentName: studentName,
+        avatarIndex: avatarIndex,
         onOpenChat: () => setState(() => navIndex = 2),
+        onOpenSettings: _openSettings,
       ),
       const StudyMaterialScreen(),
       const AiChatScreen(),
@@ -130,12 +153,14 @@ class _HomeBody extends StatelessWidget {
   final String studentName;
   final int avatarIndex;
   final VoidCallback onOpenChat;
+  final VoidCallback onOpenSettings;
 
   const _HomeBody({
     required this.studentClass,
     required this.studentName,
     required this.avatarIndex,
     required this.onOpenChat,
+    required this.onOpenSettings,
   });
 
   @override
@@ -153,9 +178,7 @@ class _HomeBody extends StatelessWidget {
             child: Align(
               alignment: Alignment.topRight,
               child: GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onTap: onOpenSettings,
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(

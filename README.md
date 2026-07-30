@@ -31,9 +31,16 @@ marigold highlighter accent.
     `main.dart`'s `builder`. Call `tr(context, 'key')` anywhere to get
     translated text — it also registers that widget to rebuild when
     the language changes.
-- `settings_screen.dart` — reachable via the gear icon on Home. Has
-  the Dark Mode switch and an EN/HI segmented toggle, same interaction
-  pattern as a typical light/dark switch.
+- `settings_screen.dart` — reachable via the gear icon on Home:
+  - **Profile** — avatar/name/class, tap to edit in a bottom sheet;
+    changes flow back to Home via `Navigator.pop(result)`
+  - **Appearance** — Dark Mode switch, EN/HI language toggle
+  - **Notifications** — daily reminder (with time picker), streak alerts
+  - **Study preferences** — daily study goal (stepper), Buddy's tone
+    (Friendly / Strict / Motivational — feed this into your LangGraph
+    system prompt to actually change Buddy's personality)
+  - **About & Help** — rate app, feedback, support, terms, version
+  - **Log out** — clears the navigation stack back to Auth Choice
 - There's no separate language-selection screen anymore — the app
   defaults to English and language lives in Settings, changeable
   anytime, same as dark mode.

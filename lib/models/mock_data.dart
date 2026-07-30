@@ -51,7 +51,7 @@ class AvatarOption {
 }
 
 /// Picked at registration, shown across Home and Chat.
-final List<AvatarOption> avatarOptions = [
+const List<AvatarOption> avatarOptions = [
   AvatarOption('😊', [AppColors.marigold, AppColors.coral]),
   AvatarOption('🦁', [AppColors.coral, AppColors.marigoldDeep]),
   AvatarOption('🐼', [AppColors.ink, AppColors.skyInk]),
