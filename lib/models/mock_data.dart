@@ -45,21 +45,22 @@ class DayActivity {
 }
 
 class AvatarOption {
-  final String emoji;
+  final IconData icon;
   final List<Color> gradient;
-  const AvatarOption(this.emoji, this.gradient);
+  const AvatarOption(this.icon, this.gradient);
 }
 
-/// Picked at registration, shown across Home and Chat.
-List<AvatarOption> get avatarOptions => [
-  AvatarOption('😊', [AppColors.marigold, AppColors.coral]),
-  AvatarOption('🦁', [AppColors.coral, AppColors.marigoldDeep]),
-  AvatarOption('🐼', [AppColors.ink, AppColors.skyInk]),
-  AvatarOption('🚀', [AppColors.teal, AppColors.skyInk]),
-  AvatarOption('🌟', [AppColors.marigold, AppColors.teal]),
-  AvatarOption('🦊', [AppColors.coral, AppColors.grape]),
-  AvatarOption('🐨', [AppColors.sage, AppColors.teal]),
-  AvatarOption('🎯', [AppColors.grape, AppColors.coral]),
+/// Picked at registration, shown across Home and Settings — icon-based,
+/// not emoji, so they render identically across every device/OS.
+final List<AvatarOption> avatarOptions = [
+  AvatarOption(Icons.rocket_launch_rounded, [AppColors.marigold, AppColors.coral]),
+  AvatarOption(Icons.emoji_events_rounded, [AppColors.coral, AppColors.marigoldDeep]),
+  AvatarOption(Icons.auto_awesome_rounded, [AppColors.ink, AppColors.skyInk]),
+  AvatarOption(Icons.psychology_rounded, [AppColors.teal, AppColors.skyInk]),
+  AvatarOption(Icons.bolt_rounded, [AppColors.marigold, AppColors.teal]),
+  AvatarOption(Icons.explore_rounded, [AppColors.coral, AppColors.grape]),
+  AvatarOption(Icons.favorite_rounded, [AppColors.sage, AppColors.teal]),
+  AvatarOption(Icons.school_rounded, [AppColors.grape, AppColors.coral]),
 ];
 
 /// Mock weekly study activity — swap for real per-student data.

@@ -94,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           alignment: Alignment.center,
-                          child: Text(a.emoji, style: const TextStyle(fontSize: 22)),
+                          child: Icon(a.icon, color: Colors.white, size: 22),
                         ),
                       );
                     },
@@ -221,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: Text(avatar.emoji, style: const TextStyle(fontSize: 26)),
+                    child: Icon(avatar.icon, color: Colors.white, size: 26),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

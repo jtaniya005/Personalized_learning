@@ -19,6 +19,7 @@ final ValueNotifier<String> buddyTone = ValueNotifier('friendly'); // friendly |
 final ValueNotifier<bool> dailyReminderOn = ValueNotifier(true);
 final ValueNotifier<String> reminderTime = ValueNotifier('7:00 PM');
 final ValueNotifier<bool> streakAlertOn = ValueNotifier(true);
+final ValueNotifier<List<String>> weakSubjectsNotifier = ValueNotifier<List<String>>([]);
 
 /// Inherited wrapper around [languageNotifier]. Placed once, high up,
 /// via MaterialApp's `builder` — so it sits above the Navigator and
@@ -93,6 +94,11 @@ final Map<String, Map<String, String>> _strings = {
   },
   'pick_avatar': {'en': 'PICK YOUR AVATAR', 'hi': 'अपना अवतार चुनें'},
   'which_class': {'en': 'WHICH CLASS ARE YOU IN?', 'hi': 'आप किस क्लास में हैं?'},
+  'weak_subjects': {'en': 'WHICH SUBJECTS NEED THE MOST HELP?', 'hi': 'किन विषयों में सबसे ज़्यादा मदद चाहिए?'},
+  'weak_subjects_sub': {
+    'en': "Buddy will prioritize these first — pick as many as apply",
+    'hi': 'बडी इन्हें पहले प्राथमिकता देगा — जितने लागू हों उतने चुनें',
+  },
   'your_details': {'en': 'Your details', 'hi': 'आपकी जानकारी'},
   'full_name_hint': {'en': 'Full name', 'hi': 'पूरा नाम'},
   'confirm_password_hint': {'en': 'Confirm password', 'hi': 'पासवर्ड की पुष्टि करें'},

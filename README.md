@@ -68,7 +68,10 @@ one form with a small signup link at the bottom.
   between returning and new students
 - `login_screen.dart` — email/password, Google, Phone OTP
 - `register_screen.dart` — name, email, password, confirm, class picker,
-  avatar picker (8 emoji avatars w/ gradient backgrounds), Google, Phone OTP
+  icon-based avatar picker (8 Material icons w/ gradient backgrounds,
+  no emoji), **weak subjects** multi-select (feeds Buddy's
+  personalization — stored in `weakSubjectsNotifier`), **daily study
+  goal** stepper (stored in `dailyGoalMinutes`), Google, Phone OTP
 - `phone_otp_screen.dart` — phone number → 4-digit code, shared by both
   login and register flows
 - `home_screen.dart` — avatar in the greeting, streak, a daily quote

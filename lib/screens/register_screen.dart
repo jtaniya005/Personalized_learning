@@ -22,8 +22,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int selectedAvatar = 0;
   bool obscure = true;
   bool obscureConfirm = true;
+  final Set<String> selectedWeakSubjects = {};
+  int goalMinutes = 30;
 
   void _createAccount() {
+    weakSubjectsNotifier.value = selectedWeakSubjects.toList();
+    dailyGoalMinutes.value = goalMinutes;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => HomeScreen(
@@ -99,7 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               : null,
                         ),
                         alignment: Alignment.center,
-                        child: Text(a.emoji, style: const TextStyle(fontSize: 26)),
+                        child: Icon(a.icon, color: Colors.white, size: 26),
                       ),
                     );
                   },
@@ -128,7 +132,97 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 22),
 
-              // ── Form ──
+              // ── Weak subjects — feeds Buddy's personalization ──
+              Text(tr(context, 'weak_subjects'),
+                  style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 4),
+              Text(tr(context, 'weak_subjects_sub'),
+                  style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: mockSubjects.map((s) {
+                  final selected = selectedWeakSubjects.contains(s.name);
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      if (selected) {
+                        selectedWeakSubjects.remove(s.name);
+                      } else {
+                        selectedWeakSubjects.add(s.name);
+                      }
+                    }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? s.color.withOpacity(0.16)
+                            : AppColors.paperCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected ? s.color : AppColors.rule,
+                          width: selected ? 1.4 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(s.icon,
+                              size: 16,
+                              color: selected ? s.color : AppColors.inkSoft),
+                          const SizedBox(width: 6),
+                          Text(s.name,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: selected ? AppColors.ink : AppColors.inkSoft)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 22),
+
+              // ── Daily study goal — sets Buddy's default check-in target ──
+              Text(tr(context, 'daily_goal'),
+                  style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 10),
+              NotebookCard(
+                holeCount: 3,
+                child: Row(
+                  children: [
+                    _GoalStepButton(
+                      icon: Icons.remove_rounded,
+                      onTap: goalMinutes > 10
+                          ? () => setState(() => goalMinutes -= 10)
+                          : null,
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text('$goalMinutes',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .displayLarge
+                                  ?.copyWith(fontSize: 26, color: AppColors.marigoldDeep)),
+                          Text(tr(context, 'min_per_day'),
+                              style: Theme.of(context).textTheme.labelSmall),
+                        ],
+                      ),
+                    ),
+                    _GoalStepButton(
+                      icon: Icons.add_rounded,
+                      onTap: goalMinutes < 180
+                          ? () => setState(() => goalMinutes += 10)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 22),
               NotebookCard(
                 holeCount: 6,
                 padding: const EdgeInsets.fromLTRB(28, 24, 20, 24),
@@ -277,6 +371,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GoalStepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _GoalStepButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: onTap == null ? AppColors.rule.withOpacity(0.4) : AppColors.paper,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.rule),
+        ),
+        child: Icon(icon, size: 18, color: onTap == null ? AppColors.inkSoft : AppColors.ink),
       ),
     );
   }

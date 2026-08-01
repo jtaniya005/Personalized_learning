@@ -215,7 +215,7 @@ class _HomeBody extends StatelessWidget {
                     ],
                   ),
                   alignment: Alignment.center,
-                  child: Text(avatar.emoji, style: const TextStyle(fontSize: 26)),
+                  child: Icon(avatar.icon, color: Colors.white, size: 26),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
