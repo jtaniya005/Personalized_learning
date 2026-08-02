@@ -237,6 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     FadeSlideIn(
+                      key: const ValueKey('header'),
                       index: 0,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,6 +277,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // ── Avatar picker ──
                     FadeSlideIn(
+                      key: const ValueKey('avatar_picker'),
                       index: 1,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,6 +331,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // ── Class selector ──
                     FadeSlideIn(
+                      key: const ValueKey('class_selector'),
                       index: 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,6 +362,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     if (selectedClass == 12)
                       FadeSlideIn(
+                        key: const ValueKey('stream_selector'),
                         index: 3,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,6 +413,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // ── Weak subjects ──
                     FadeSlideIn(
+                      key: const ValueKey('weak_subjects'),
                       index: 4,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,6 +507,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     if (selectedClass == 10 || (selectedClass == 12 && selectedStream != null))
                       FadeSlideIn(
+                        key: const ValueKey('last_exam'),
                         index: 5,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -572,6 +578,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // ── Daily study goal ──
                     FadeSlideIn(
+                      key: const ValueKey('daily_goal'),
                       index: 6,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -619,6 +626,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     
                     // ── Details ──
                     FadeSlideIn(
+                      key: const ValueKey('details'),
                       index: 7,
                       child: NotebookCard(
                 holeCount: 6,
@@ -704,6 +712,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     FadeSlideIn(
+                      key: const ValueKey('login_options'),
                       index: 8,
                       child: Column(
                         children: [

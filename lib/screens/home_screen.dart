@@ -10,6 +10,7 @@ import 'study_material_screen.dart';
 import 'ai_chat_screen.dart';
 import 'progress_screen.dart';
 import 'settings_screen.dart';
+import 'games/brain_break_menu.dart';
 
 class HomeScreen extends StatefulWidget {
   final int studentClass;
@@ -304,10 +305,53 @@ class _HomeBody extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // ── Brain Break ──
+          FadeSlideIn(
+            index: 4,
+            child: NotebookCard(
+              holeCount: 3,
+              onTap: () {
+                Navigator.of(context).push(BrainBreakMenu.route());
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.marigold.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text('🎮', style: TextStyle(fontSize: 20)),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Brain Break',
+                            style: Theme.of(context).textTheme.bodyLarge),
+                        const SizedBox(height: 2),
+                        Text('Take a quick mini-game breather',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: AppColors.inkSoft)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.videogame_asset_rounded, color: AppColors.inkSoft),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 30),
 
           FadeSlideIn(
-            index: 4,
+            index: 5,
             child: Row(
               children: [
                 Text(tr(context, 'todays_plan'), style: Theme.of(context).textTheme.titleMedium),
@@ -332,7 +376,7 @@ class _HomeBody extends StatelessWidget {
             itemBuilder: (context, i) {
               final s = mockSubjects[i];
               return FadeSlideIn(
-                index: 5 + i,
+                index: 6 + i,
                 child: _SubjectCard(subject: s),
               );
             },

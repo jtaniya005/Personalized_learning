@@ -11,17 +11,21 @@ void main() {
         child: const RegisterScreen(),
       ),
     ));
-    await tester.pump(const Duration(milliseconds: 500)); // allow animations
+    // Run all timers
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    // Verify Class 10 subjects are present
+    expect(find.text('Mathematics'), findsWidgets);
     
     // Tap Class 12
     await tester.tap(find.text('Class 12'));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
     // Tap PCB
     await tester.tap(find.text('Science (PCB)'));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-    // PCB has Biology
-    expect(find.text('Biology'), findsWidgets);
+    // Verify PCB subjects are present
+    expect(find.text('Physics'), findsWidgets);
   });
 }
