@@ -3,6 +3,9 @@ import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/notebook_card.dart';
 import '../models/mock_data.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -22,6 +25,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
   _IntroStep intro = _IntroStep.none;
   String chatLanguage = 'English';
 
+  final SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
+  bool _isListening = false;
+  String _lastRecognizedWords = '';
+  String _preListeningText = '';
+
   final List<ChatMessage> messages = [];
 
   final List<String> suggestions = const [
@@ -35,6 +44,60 @@ class _AiChatScreenState extends State<AiChatScreen> {
   void initState() {
     super.initState();
     _runIntroSequence();
+    _initSpeech();
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize(
+      onError: (error) => print('Speech Error: $error'),
+      onStatus: (status) {
+        if (status == 'notListening' || status == 'done') {
+          if (mounted) setState(() => _isListening = false);
+        }
+      },
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _startListening() async {
+    var status = await Permission.microphone.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enable microphone access in settings.')),
+        );
+      }
+      return;
+    }
+
+    if (!_speechEnabled) return;
+
+    _preListeningText = controller.text;
+    String localeId = 'en_IN';
+    if (chatLanguage == 'Hindi') {
+      localeId = 'hi_IN';
+    }
+    // Note: Hinglish maps to en_IN since there is no native Hinglish mode.
+
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      localeId: localeId,
+    );
+    setState(() => _isListening = true);
+  }
+
+  Future<void> _stopListening() async {
+    await _speechToText.stop();
+    setState(() => _isListening = false);
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _lastRecognizedWords = result.recognizedWords;
+      final separator = _preListeningText.isNotEmpty && !_preListeningText.endsWith(' ') ? ' ' : '';
+      controller.text = '$_preListeningText$separator$_lastRecognizedWords';
+      controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
+    });
   }
 
   Future<void> _runIntroSequence() async {
@@ -59,7 +122,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _scrollToBottom();
   }
 
-  void _send(String text, {String? replyOverride}) {
+  void _send(String text, {String? replyOverride}) async {
+    if (_isListening) await _stopListening();
     if (text.trim().isEmpty) return;
     setState(() {
       messages.add(ChatMessage(text, true));
@@ -226,6 +290,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
         const SizedBox(height: 12),
 
         // ── Input bar ──
+        if (_isListening)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0, left: 24.0),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.coral),
+                ),
+                const SizedBox(width: 8),
+                Text('Listening...', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w600, fontSize: 12)),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
           child: Row(
@@ -239,7 +318,30 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              if (_speechEnabled) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _isListening ? _stopListening : _startListening,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _isListening ? AppColors.coral.withOpacity(0.15) : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isListening ? AppColors.coral : AppColors.rule,
+                      ),
+                    ),
+                    child: Icon(
+                      _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      color: _isListening ? AppColors.coral : AppColors.inkSoft,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => _send(controller.text),
                 child: Container(
