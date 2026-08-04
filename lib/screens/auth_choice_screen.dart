@@ -4,6 +4,7 @@ import '../state/app_settings.dart';
 import '../widgets/app_logo.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import '../widgets/page_transitions.dart';
 
 /// Shown right after onboarding. Keeps "I already have an account" and
 /// "I'm new here" as two distinct, equally visible choices — instead of
@@ -40,7 +41,7 @@ class AuthChoiceScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    FadeSlidePageRoute(page: const LoginScreen()),
                   ),
                   child: Text(tr(context, 'auth_login')),
                 ),
@@ -52,7 +53,7 @@ class AuthChoiceScreen extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                    FadeSlidePageRoute(page: const RegisterScreen()),
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),

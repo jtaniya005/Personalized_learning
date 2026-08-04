@@ -181,12 +181,12 @@ class _BrainBreakMenuState extends State<BrainBreakMenu> {
                   ],
                 ),
               ),
-              ),
             ),
           ],
         ),
       ),
     ),
-  );
+  ),
+);
 }
 }

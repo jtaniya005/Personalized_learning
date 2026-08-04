@@ -154,7 +154,7 @@ class _MathSprintGameState extends State<MathSprintGame> with SingleTickerProvid
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -192,7 +192,7 @@ class _MathSprintGameState extends State<MathSprintGame> with SingleTickerProvid
                     _AnimatedTimer(controller: _timerController),
                   ],
                 ),
-                const Spacer(flex: 1),
+                const SizedBox(height: 32),
                 
                 // Question
                 Center(
@@ -221,7 +221,7 @@ class _MathSprintGameState extends State<MathSprintGame> with SingleTickerProvid
                   ),
                 ),
                 
-                const Spacer(flex: 2),
+                const SizedBox(height: 64),
 
                 // Options Grid
                 GridView.builder(
@@ -308,6 +308,7 @@ class _MathSprintGameState extends State<MathSprintGame> with SingleTickerProvid
                 ),
               ),
             ),
+          ),
           
           if (_isGameOver)
             GameResultsOverlay(

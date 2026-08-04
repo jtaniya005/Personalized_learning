@@ -168,7 +168,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           padding: const EdgeInsets.fromLTRB(24, 20, 12, 12),
           child: Row(
             children: [
-              const _BreathingAvatar(),
+              _BreathingAvatar(messageCount: messages.length),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -431,7 +431,8 @@ class _CheckInCard extends StatelessWidget {
 /// Buddy's avatar gently "breathes" — a slow scale loop that reads as
 /// alive without being distracting, echoing a friend waiting to chat.
 class _BreathingAvatar extends StatefulWidget {
-  const _BreathingAvatar();
+  final int messageCount;
+  const _BreathingAvatar({required this.messageCount});
 
   @override
   State<_BreathingAvatar> createState() => _BreathingAvatarState();
@@ -448,6 +449,15 @@ class _BreathingAvatarState extends State<_BreathingAvatar>
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_BreathingAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.messageCount > oldWidget.messageCount) {
+      // Small bounce/glow reaction on new message
+      controller.forward(from: 0.3);
+    }
   }
 
   @override
@@ -487,9 +497,22 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 10 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: Align(
+        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
         constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.75),
         margin: const EdgeInsets.only(bottom: 12),
@@ -512,6 +535,7 @@ class _Bubble extends StatelessWidget {
             height: 1.4,
           ),
         ),
+      ),
       ),
     );
   }
@@ -571,14 +595,17 @@ class _TypingBubbleState extends State<_TypingBubble>
                 final bounce = t < 0.5 ? t * 2 : (1 - t) * 2;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: Transform.translate(
-                    offset: Offset(0, -4 * bounce),
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: AppColors.inkSoft,
-                        shape: BoxShape.circle,
+                  child: Transform.scale(
+                    scale: 0.6 + 0.4 * bounce,
+                    child: Opacity(
+                      opacity: 0.3 + 0.7 * bounce,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.inkSoft,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),

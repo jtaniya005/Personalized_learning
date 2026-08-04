@@ -11,6 +11,7 @@ import 'ai_chat_screen.dart';
 import 'progress_screen.dart';
 import 'settings_screen.dart';
 import 'games/brain_break_menu.dart';
+import '../widgets/page_transitions.dart';
 
 class HomeScreen extends StatefulWidget {
   final int studentClass;
@@ -36,8 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openSettings() async {
     final result = await Navigator.of(context).push<Map<String, dynamic>>(
-      MaterialPageRoute(
-        builder: (_) => SettingsScreen(
+      FadeSlidePageRoute(
+        page: SettingsScreen(
           studentClass: studentClass,
           studentName: studentName,
           avatarIndex: avatarIndex,
@@ -170,11 +171,17 @@ class _HomeBody extends StatelessWidget {
     final quote = _quotes[DateTime.now().day % _quotes.length];
 
     return PaperTexture(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
-        children: [
-          // ── Top bar: settings ──
-          FadeSlideIn(
+      child: RefreshIndicator(
+        color: AppColors.marigold,
+        onRefresh: () async {
+          // Simulate fetch
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
+          children: [
+            // ── Top bar: settings ──
+            FadeSlideIn(
             index: 0,
             child: Align(
               alignment: Alignment.topRight,
@@ -355,8 +362,8 @@ class _HomeBody extends StatelessWidget {
             child: Row(
               children: [
                 Text(tr(context, 'todays_plan'), style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(width: 6),
-                const Text('🎯', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                const _DailyProgressRing(progress: 0.65),
               ],
             ),
           ),
@@ -382,6 +389,28 @@ class _HomeBody extends StatelessWidget {
             },
           ),
         ],
+      ),
+      ),
+    );
+  }
+}
+
+class _DailyProgressRing extends StatelessWidget {
+  final double progress;
+  const _DailyProgressRing({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: progress),
+      duration: const Duration(milliseconds: 1200),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) => SizedBox(
+        width: 18,
+        height: 18,
+        child: CustomPaint(
+          painter: _RingPainter(value: value, color: AppColors.marigoldDeep, trackWidth: 2.5),
+        ),
       ),
     );
   }
@@ -417,11 +446,7 @@ class _StreakBadgeState extends State<_StreakBadge>
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: Tween(begin: 1.0, end: 1.06).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      ),
-      child: Container(
+    return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -434,14 +459,26 @@ class _StreakBadgeState extends State<_StreakBadge>
         ),
         child: Row(
           children: [
-            const Icon(Icons.local_fire_department_rounded,
-                size: 18, color: AppColors.marigoldDeep),
+            AnimatedBuilder(
+              animation: controller,
+              builder: (context, child) {
+                final pulse = controller.value;
+                return Transform.scale(
+                  scale: 0.85 + 0.15 * pulse,
+                  child: Opacity(
+                    opacity: 0.6 + 0.4 * pulse,
+                    child: child,
+                  ),
+                );
+              },
+              child: const Icon(Icons.local_fire_department_rounded,
+                  size: 18, color: AppColors.marigoldDeep),
+            ),
             const SizedBox(width: 4),
             Text('${widget.days}',
                 style: TextStyle(
                     fontWeight: FontWeight.w800, color: AppColors.ink)),
           ],
-        ),
       ),
     );
   }
@@ -581,21 +618,22 @@ class _ProgressRing extends StatelessWidget {
 class _RingPainter extends CustomPainter {
   final double value;
   final Color color;
-  _RingPainter({required this.value, required this.color});
+  final double trackWidth;
+  _RingPainter({required this.value, required this.color, this.trackWidth = 3});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 2.5;
+    final radius = size.width / 2 - (trackWidth / 2);
     final track = Paint()
       ..color = AppColors.rule
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = trackWidth
       ..strokeCap = StrokeCap.round;
     final fill = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = trackWidth
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, radius, track);
     canvas.drawArc(
@@ -637,7 +675,12 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 24),
+              AnimatedScale(
+                scale: active ? 1.15 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutBack,
+                child: Icon(icon, color: color, size: 24),
+              ),
               const SizedBox(height: 3),
               Text(label,
                   style: TextStyle(

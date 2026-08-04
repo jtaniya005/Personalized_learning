@@ -17,17 +17,21 @@ class Subject {
   });
 }
 
+enum ChapterStatus { done, inProgress, locked }
+
 class Chapter {
   final String title;
   final String tag; // e.g. "Exam favourite", "Weak area", "Quick revise"
   final Color tagColor;
   final String duration;
+  final ChapterStatus status;
 
   const Chapter({
     required this.title,
     required this.tag,
     required this.tagColor,
     required this.duration,
+    this.status = ChapterStatus.locked,
   });
 }
 
@@ -86,17 +90,20 @@ final List<Subject> mockSubjects = [
           title: 'Quadratic Equations',
           tag: 'Exam favourite',
           tagColor: AppColors.marigoldDeep,
-          duration: '45 min'),
+          duration: '45 min',
+          status: ChapterStatus.done),
       Chapter(
           title: 'Trigonometry Basics',
           tag: 'Weak area',
           tagColor: AppColors.coral,
-          duration: '30 min'),
+          duration: '30 min',
+          status: ChapterStatus.inProgress),
       Chapter(
           title: 'Pair of Linear Equations',
           tag: 'Quick revise',
           tagColor: AppColors.sage,
-          duration: '20 min'),
+          duration: '20 min',
+          status: ChapterStatus.locked),
     ],
   ),
   Subject(
@@ -109,12 +116,14 @@ final List<Subject> mockSubjects = [
           title: 'Chemical Reactions',
           tag: 'Exam favourite',
           tagColor: AppColors.marigoldDeep,
-          duration: '35 min'),
+          duration: '35 min',
+          status: ChapterStatus.inProgress),
       Chapter(
           title: 'Light — Reflection & Refraction',
           tag: 'Weak area',
           tagColor: AppColors.coral,
-          duration: '40 min'),
+          duration: '40 min',
+          status: ChapterStatus.locked),
     ],
   ),
   Subject(
@@ -145,7 +154,8 @@ final List<Subject> mockSubjects = [
           title: 'A Letter to God',
           tag: 'Quick revise',
           tagColor: AppColors.sage,
-          duration: '15 min'),
+          duration: '15 min',
+          status: ChapterStatus.done),
     ],
   ),
 ];

@@ -6,9 +6,14 @@ import '../widgets/fade_slide_in.dart';
 import '../widgets/paper_texture.dart';
 import '../models/mock_data.dart';
 
-class ProgressScreen extends StatelessWidget {
+class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
+  @override
+  State<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends State<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     final weakChapters = mockWeakChapters;
@@ -18,9 +23,14 @@ class ProgressScreen extends StatelessWidget {
         .toDouble();
 
     return PaperTexture(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
-        children: [
+      child: RefreshIndicator(
+        color: AppColors.marigold,
+        onRefresh: () async {
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
+          children: [
           FadeSlideIn(
             index: 0,
             child: Text(tr(context, 'progress_title'),
@@ -76,7 +86,9 @@ class ProgressScreen extends StatelessWidget {
             height: 160,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: mockWeekActivity.map((d) {
+              children: mockWeekActivity.asMap().entries.map((entry) {
+                final i = entry.key;
+                final d = entry.value;
                 final h = (d.minutes / maxMinutes) * 88 + 12;
                 return Expanded(
                   child: Padding(
@@ -93,14 +105,18 @@ class ProgressScreen extends StatelessWidget {
                                   : AppColors.inkSoft,
                             )),
                         const SizedBox(height: 6),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          height: h,
-                          decoration: BoxDecoration(
-                            color: d.isToday
-                                ? AppColors.marigold
-                                : AppColors.sage.withOpacity(0.55),
-                            borderRadius: BorderRadius.circular(6),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: Duration(milliseconds: 400 + (i * 100)),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, val, _) => Container(
+                            height: h * val,
+                            decoration: BoxDecoration(
+                              color: d.isToday
+                                  ? AppColors.marigold
+                                  : AppColors.sage.withOpacity(0.55),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -218,8 +234,25 @@ class ProgressScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(w.subject.name,
-                              style: Theme.of(context).textTheme.labelSmall),
+                          Row(
+                            children: [
+                              Text(w.subject.name,
+                                  style: Theme.of(context).textTheme.labelSmall),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.coral.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text('Needs focus',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.coral)),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 3),
                           Text(w.chapter.title,
                               style: Theme.of(context).textTheme.titleMedium),
@@ -246,6 +279,7 @@ class ProgressScreen extends StatelessWidget {
           );
         }),
         ],
+        ),
       ),
     );
   }

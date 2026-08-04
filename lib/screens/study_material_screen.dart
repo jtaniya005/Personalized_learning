@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/notebook_card.dart';
-import '../widgets/fade_slide_in.dart';
 import '../models/mock_data.dart';
+import '../widgets/animated_scale_press.dart';
+import '../widgets/fade_slide_in.dart';
 
 class StudyMaterialScreen extends StatefulWidget {
   const StudyMaterialScreen({super.key});
@@ -40,26 +41,28 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
               itemBuilder: (context, i) {
                 final s = mockSubjects[i];
                 final selected = i == selectedSubject;
-                return GestureDetector(
-                  onTap: () => setState(() => selectedSubject = i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: selected ? s.color : AppColors.paperCard,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: selected ? s.color : AppColors.rule,
+                return AnimatedScalePress(
+                  child: GestureDetector(
+                    onTap: () => setState(() => selectedSubject = i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected ? s.color : AppColors.paperCard,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected ? s.color : AppColors.rule,
+                        ),
                       ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      s.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: selected ? Colors.white : AppColors.inkSoft,
+                      alignment: Alignment.center,
+                      child: Text(
+                        s.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: selected ? Colors.white : AppColors.inkSoft,
+                        ),
                       ),
                     ),
                   ),
@@ -77,56 +80,80 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 14),
               itemBuilder: (context, i) {
                 final c = subject.chapters[i];
+                
+                final isDone = c.status == ChapterStatus.done;
+                final isLocked = c.status == ChapterStatus.locked;
+                final isInProgress = c.status == ChapterStatus.inProgress;
+                
+                Color borderColor = AppColors.rule;
+                if (isDone) borderColor = AppColors.teal;
+                if (isInProgress) borderColor = AppColors.marigold;
+                
                 return FadeSlideIn(
                   index: i,
-                  child: NotebookCard(
-                  holeCount: 3,
-                  onTap: () {},
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: c.tagColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(6),
+                  child: Opacity(
+                    opacity: isLocked ? 0.6 : 1.0,
+                    child: NotebookCard(
+                    holeCount: 3,
+                    borderColor: borderColor,
+                    onTap: isLocked ? null : () {},
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: c.tagColor.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      c.tag.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.3,
+                                        color: c.tagColor,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isDone) ...[
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.check_circle_rounded, color: AppColors.teal, size: 16),
+                                  ] else if (isLocked) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.lock_rounded, color: AppColors.inkSoft, size: 16),
+                                  ]
+                                ],
                               ),
-                              child: Text(
-                                c.tag.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.3,
-                                  color: c.tagColor,
-                                ),
+                              const SizedBox(height: 8),
+                              Text(c.title,
+                                  style: Theme.of(context).textTheme.titleMedium),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.schedule_rounded,
+                                      size: 13, color: AppColors.inkSoft),
+                                  const SizedBox(width: 4),
+                                  Text(c.duration,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(c.title,
-                                style: Theme.of(context).textTheme.titleMedium),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.schedule_rounded,
-                                    size: 13, color: AppColors.inkSoft),
-                                const SizedBox(width: 4),
-                                Text(c.duration,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      Icon(Icons.chevron_right_rounded,
-                          color: AppColors.inkSoft),
-                    ],
-                  ),
+                        Icon(Icons.chevron_right_rounded,
+                            color: AppColors.inkSoft),
+                      ],
+                    ),
+                    ),
                   ),
                 );
               },

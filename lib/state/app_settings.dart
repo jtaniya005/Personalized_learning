@@ -102,7 +102,7 @@ final Map<String, Map<String, String>> _strings = {
   'your_details': {'en': 'Your details', 'hi': 'आपकी जानकारी'},
   'full_name_hint': {'en': 'Full name', 'hi': 'पूरा नाम'},
   'confirm_password_hint': {'en': 'Confirm password', 'hi': 'पासवर्ड की पुष्टि करें'},
-  'create_account_btn': {'en': 'Create account', 'hi': 'खाता बनाएं'},
+  'create_account_btn': {'en': 'Create Student Profile', 'hi': 'छात्र प्रोफ़ाइल बनाएं'},
 
   // Phone OTP
   'verify_phone': {'en': 'Verify your phone', 'hi': 'अपना फ़ोन सत्यापित करें'},
@@ -112,11 +112,11 @@ final Map<String, Map<String, String>> _strings = {
   'resend': {'en': "Didn't get it? Resend", 'hi': 'कोड नहीं मिला? दोबारा भेजें'},
 
   // Home
-  'greet_morning': {'en': 'Good morning', 'hi': 'सुप्रभात'},
-  'greet_afternoon': {'en': 'Good afternoon', 'hi': 'नमस्ते'},
-  'greet_evening': {'en': 'Good evening', 'hi': 'शुभ संध्या'},
-  'greet_night': {'en': 'Good night', 'hi': 'शुभ रात्रि'},
-  'greet_late': {'en': 'Still up', 'hi': 'अभी भी जाग रहे हो'},
+  'greet_morning': {'en': 'Rise and shine', 'hi': 'सुप्रभात, उठो और जागो'},
+  'greet_afternoon': {'en': 'Keep up the momentum', 'hi': 'लगे रहो'},
+  'greet_evening': {'en': 'Great work today', 'hi': 'आज बहुत बढ़िया काम किया'},
+  'greet_night': {'en': 'Winding down', 'hi': 'अब आराम करने का समय'},
+  'greet_late': {'en': 'Burning the midnight oil', 'hi': 'देर रात तक मेहनत जारी है'},
   'board_exam_mode': {'en': 'Board exam mode on', 'hi': 'बोर्ड परीक्षा मोड चालू'},
   'class_label': {'en': 'Class', 'hi': 'कक्षा'},
   'todays_plan': {'en': "Today's plan", 'hi': 'आज की योजना'},

@@ -7,6 +7,10 @@ import '../widgets/app_logo.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'phone_otp_screen.dart';
+import '../widgets/focus_glow_wrapper.dart';
+import '../widgets/primary_glow_button.dart';
+import '../widgets/animated_scale_press.dart';
+import '../widgets/page_transitions.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,8 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _goHome() {
     // Returning user — class comes from their saved profile, not asked again.
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const HomeScreen(
+      FadeSlidePageRoute(
+        page: const HomeScreen(
           studentClass: 10,
           studentName: 'Alex',
           avatarIndex: 0,
@@ -40,12 +44,27 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const AppLogo(size: 40),
-                  const SizedBox(width: 10),
-                  Text('Learn Buddy', style: Theme.of(context).textTheme.titleMedium),
-                ],
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.scale(
+                      scale: 0.9 + (0.1 * value),
+                      alignment: Alignment.centerLeft,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Row(
+                  children: [
+                    const AppLogo(size: 40),
+                    const SizedBox(width: 10),
+                    Text('Learn Buddy', style: Theme.of(context).textTheme.titleMedium),
+                  ],
+                ),
               ),
               const SizedBox(height: 36),
               Text(tr(context, 'login_welcome'),
@@ -58,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 28),
 
               NotebookCard(
+                ambientGlow: true,
                 holeCount: 5,
                 padding: const EdgeInsets.fromLTRB(28, 24, 20, 24),
                 child: Column(
@@ -65,27 +85,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(tr(context, 'login_title'), style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 16),
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: tr(context, 'email_hint'),
-                        prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
+                    FocusGlowWrapper(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: tr(context, 'email_hint'),
+                          prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      obscureText: obscure,
-                      decoration: InputDecoration(
-                        hintText: tr(context, 'password_hint'),
-                        prefixIcon:
-                            const Icon(Icons.lock_outline_rounded, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            size: 20,
+                    FocusGlowWrapper(
+                      child: TextField(
+                        obscureText: obscure,
+                        decoration: InputDecoration(
+                          hintText: tr(context, 'password_hint'),
+                          prefixIcon:
+                              const Icon(Icons.lock_outline_rounded, size: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              obscure
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              size: 20,
+                            ),
+                            onPressed: () => setState(() => obscure = !obscure),
                           ),
-                          onPressed: () => setState(() => obscure = !obscure),
                         ),
                       ),
                     ),
@@ -100,9 +124,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _goHome,
-                        child: Text(tr(context, 'auth_login')),
+                      child: PrimaryGlowButton(
+                        child: ElevatedButton(
+                          onPressed: _goHome,
+                          child: Text(tr(context, 'auth_login')),
+                        ),
                       ),
                     ),
                   ],
@@ -160,8 +186,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         recognizer: (TapGestureRecognizer()
                           ..onTap = () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const RegisterScreen()),
+                              FadeSlidePageRoute(
+                                  page: const RegisterScreen()),
                             );
                           }),
                       ),
@@ -187,15 +213,17 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 20, color: AppColors.ink),
-      label: Text(label,
-          style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.w600)),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        side: BorderSide(color: AppColors.rule),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    return AnimatedScalePress(
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 20, color: AppColors.ink),
+        label: Text(label,
+            style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          side: BorderSide(color: AppColors.rule),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
       ),
     );
   }

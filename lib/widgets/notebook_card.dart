@@ -11,14 +11,18 @@ class NotebookCard extends StatefulWidget {
   final int holeCount;
   final VoidCallback? onTap;
   final EdgeInsets padding;
+  final bool ambientGlow;
+  final Color? borderColor;
 
   const NotebookCard({
     super.key,
     required this.child,
     this.background,
-    this.holeCount = 4,
+    this.holeCount = 3,
     this.onTap,
     this.padding = const EdgeInsets.fromLTRB(28, 18, 18, 18),
+    this.ambientGlow = false,
+    this.borderColor,
   });
 
   @override
@@ -48,7 +52,16 @@ class _NotebookCardState extends State<NotebookCard> {
           decoration: BoxDecoration(
             color: widget.background ?? AppColors.paperCard,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.rule, width: 1),
+            border: Border.all(color: widget.borderColor ?? AppColors.rule, width: 1),
+            boxShadow: widget.ambientGlow
+                ? [
+                    BoxShadow(
+                      color: AppColors.marigold.withOpacity(0.12),
+                      blurRadius: 36,
+                      spreadRadius: 2,
+                    )
+                  ]
+                : null,
           ),
           child: Stack(
             children: [

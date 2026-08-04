@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../state/app_settings.dart';
 import '../widgets/notebook_card.dart';
+import '../widgets/custom_theme_switch.dart';
 import '../models/mock_data.dart';
 import 'auth_choice_screen.dart';
 
@@ -71,6 +72,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(tr(sheetContext, 'edit_profile_title'),
                     style: Theme.of(sheetContext).textTheme.headlineMedium),
                 const SizedBox(height: 18),
+                Text(tr(sheetContext, 'pick_avatar'), style: Theme.of(sheetContext).textTheme.labelSmall),
+                const SizedBox(height: 12),
                 SizedBox(
                   height: 60,
                   child: ListView.separated(
@@ -274,9 +277,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ),
-                    Switch(
+                    CustomThemeSwitch(
                       value: isDark,
-                      activeColor: AppColors.marigold,
                       onChanged: (v) => isDarkNotifier.value = v,
                     ),
                   ],
@@ -347,9 +349,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
                         ),
-                        Switch(
+                        CustomThemeSwitch(
                           value: on,
-                          activeColor: AppColors.marigold,
                           onChanged: (v) => dailyReminderOn.value = v,
                         ),
                       ],
@@ -409,9 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ),
-                    Switch(
+                    CustomThemeSwitch(
                       value: on,
-                      activeColor: AppColors.marigold,
                       onChanged: (v) => streakAlertOn.value = v,
                     ),
                   ],

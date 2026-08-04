@@ -181,7 +181,7 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Column(
               children: [
@@ -210,7 +210,7 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
                     ],
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 32),
                 
                 // Board
                 AspectRatio(
@@ -283,11 +283,12 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
                   ),
                 ),
                 
-                const Spacer(flex: 2),
+                const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
+          ),
           
           if (_isGameOver)
             GameResultsOverlay(

@@ -153,7 +153,7 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Column(
               children: [
@@ -178,9 +178,9 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
                 const SizedBox(height: 32),
                 
                 // Grid
-                Expanded(
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
                       crossAxisSpacing: 12,
@@ -208,11 +208,11 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
                       );
                     },
                   ),
-                ),
                   ],
                 ),
               ),
             ),
+          ),
           
           if (_isGameOver)
             GameResultsOverlay(

@@ -41,7 +41,7 @@ class AuthService {
           if (previousTestMarks != null) 'previous_test_marks': previousTestMarks,
           if (previousClassPercentage != null) 'previous_class_percentage': previousClassPercentage,
         }),
-      );
+      ).timeout(const Duration(seconds: 4));
 
       final data = jsonDecode(response.body);
 
