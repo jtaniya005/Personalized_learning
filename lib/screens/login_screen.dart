@@ -11,6 +11,8 @@ import '../widgets/focus_glow_wrapper.dart';
 import '../widgets/primary_glow_button.dart';
 import '../widgets/animated_scale_press.dart';
 import '../widgets/page_transitions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,15 +22,126 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
   bool obscure = true;
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loginWithEmail() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    try {
+      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (cred.user != null && !cred.user!.emailVerified) {
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          setState(() => isLoading = false);
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Verify your email'),
+              content: const Text('Please verify your email — check your inbox.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    try {
+                      await cred.user?.sendEmailVerification();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Verification email resent')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: ${e.toString()}')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Resend verification email'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() => isLoading = false);
+        _goHome();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Login failed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (mounted) _goHome();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
+        );
+      }
+    }
+  }
 
   void _goHome() {
-    // Returning user — class comes from their saved profile, not asked again.
     Navigator.of(context).pushReplacement(
       FadeSlidePageRoute(
         page: const HomeScreen(
           studentClass: 10,
-          studentName: 'Alex',
+          studentName: 'Student',
           avatarIndex: 0,
         ),
       ),
@@ -87,6 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 16),
                     FocusGlowWrapper(
                       child: TextField(
+                        controller: emailController,
                         decoration: InputDecoration(
                           hintText: tr(context, 'email_hint'),
                           prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
@@ -96,6 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                     FocusGlowWrapper(
                       child: TextField(
+                        controller: passwordController,
                         obscureText: obscure,
                         decoration: InputDecoration(
                           hintText: tr(context, 'password_hint'),
@@ -126,8 +241,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       child: PrimaryGlowButton(
                         child: ElevatedButton(
-                          onPressed: _goHome,
-                          child: Text(tr(context, 'auth_login')),
+                          onPressed: isLoading ? null : _loginWithEmail,
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(tr(context, 'auth_login')),
                         ),
                       ),
                     ),
@@ -153,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: _SocialButton(
                       label: tr(context, 'google'),
                       icon: Icons.g_mobiledata_rounded,
-                      onTap: _goHome,
+                      onTap: isLoading ? () {} : _loginWithGoogle,
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -18,6 +18,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 enum MarksheetEntryMode { options, loading, review, manual }
 
@@ -361,28 +362,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => isLoading = true);
 
-    final result = await AuthService.register(
-      name: name,
-      email: email,
-      password: password,
-      studentClass: selectedClass,
-      avatarIndex: selectedAvatar,
-      weakSubjects: selectedWeakSubjects.toList(),
-      dailyGoalMinutes: goalMinutes,
-    );
+    try {
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await cred.user?.updateDisplayName(name);
+      await cred.user?.sendEmailVerification();
+      await FirebaseAuth.instance.signOut();
 
-    if (mounted) {
-      setState(() => isLoading = false);
-    }
-
-    if (result['success']) {
-      setState(() {
-        _accountDetailsValidated = true;
-      });
-    } else {
       if (mounted) {
+        setState(() => isLoading = false);
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Check your email'),
+            content: const Text('We have sent a verification link to your email. Please verify your account before logging in.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
+          SnackBar(content: Text(e.message ?? 'Registration failed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
     }

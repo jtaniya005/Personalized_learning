@@ -1,0 +1,51 @@
+<svg viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="blur2" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="30"/>
+    </filter>
+  </defs>
+
+  <circle cx="240" cy="240" r="150" fill="#4C9C90" opacity="0.28" filter="url(#blur2)"/>
+
+  <!-- sparkles -->
+  <circle cx="100" cy="360" r="5" fill="#FF6F59" opacity="0.6"/>
+  <path d="M368,100 l4,11 l11,4 l-11,4 l-4,11 l-4,-11 l-11,-4 l11,-4 Z" fill="#FFA531" opacity="0.7"/>
+
+  <!-- winding dashed path -->
+  <path d="M90,360 C150,360 150,300 210,290 C270,280 270,220 200,200 C130,180 150,120 220,110 C280,102 320,120 370,110"
+        fill="none" stroke="#E3D9C4" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 16"/>
+
+  <!-- start marker -->
+  <g transform="translate(90,360)">
+    <circle r="20" fill="#FF6F59"/>
+    <circle r="7" fill="#FBF7EF"/>
+  </g>
+
+  <!-- waypoint 1: math -->
+  <g transform="translate(206,286)">
+    <circle r="26" fill="#FFF3DE" stroke="#FFA531" stroke-width="3"/>
+    <text x="0" y="9" font-family="Georgia, serif" font-size="24" font-weight="700" fill="#FFA531" text-anchor="middle">&#8721;</text>
+  </g>
+
+  <!-- waypoint 2: science -->
+  <g transform="translate(198,198)">
+    <circle r="26" fill="#E9F5F2" stroke="#4C9C90" stroke-width="3"/>
+    <path d="M-6,-9 L-6,2 L-13,13 C-15,16 -13,19 -9,19 L9,19 C13,19 15,16 13,13 L6,2 L6,-9"
+          fill="none" stroke="#4C9C90" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M-8,-9 L8,-9" stroke="#4C9C90" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- waypoint 3: english/book -->
+  <g transform="translate(222,112)">
+    <circle r="26" fill="#FFEDE9" stroke="#FF6F59" stroke-width="3"/>
+    <path d="M-13,-9 C-6,-13 6,-13 13,-9 L13,10 C6,6 -6,6 -13,10 Z" fill="none" stroke="#FF6F59" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M0,-9 L0,10" stroke="#FF6F59" stroke-width="2.5"/>
+  </g>
+
+  <!-- finish: trophy flag -->
+  <g transform="translate(372,108)">
+    <circle r="30" fill="#FFA531"/>
+    <path d="M-8,-14 L-8,16" stroke="#FBF7EF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M-8,-14 L11,-8 L-8,-2 Z" fill="#FBF7EF"/>
+  </g>
+</svg>
