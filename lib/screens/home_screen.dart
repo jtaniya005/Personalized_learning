@@ -285,7 +285,7 @@ class _HomeBody extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: const Text('🙂', style: TextStyle(fontSize: 20)),
+                    child: Icon(Icons.face_retouching_natural_rounded, color: AppColors.paper, size: 22),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -332,7 +332,7 @@ class _HomeBody extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: const Text('🎮', style: TextStyle(fontSize: 20)),
+                    child: Icon(Icons.videogame_asset_rounded, color: AppColors.marigoldDeep, size: 22),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

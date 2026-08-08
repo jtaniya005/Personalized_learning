@@ -4,11 +4,11 @@ import '../state/app_settings.dart';
 import 'auth_choice_screen.dart';
 
 class _Slide {
-  final String emoji;
+  final IconData icon;
   final Color bg;
   final String title;
   final String body;
-  const _Slide(this.emoji, this.bg, this.title, this.body);
+  const _Slide(this.icon, this.bg, this.title, this.body);
 }
 
 class OnboardingScreen extends StatefulWidget {
@@ -36,9 +36,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final slides = [
-      _Slide('📚', AppColors.marigold, tr(context, 'onb1_title'), tr(context, 'onb1_body')),
-      _Slide('🙂', AppColors.coral, tr(context, 'onb2_title'), tr(context, 'onb2_body')),
-      _Slide('📈', AppColors.sage, tr(context, 'onb3_title'), tr(context, 'onb3_body')),
+      _Slide(Icons.auto_stories_rounded, AppColors.marigold, tr(context, 'onb1_title'), tr(context, 'onb1_body')),
+      _Slide(Icons.face_retouching_natural_rounded, AppColors.coral, tr(context, 'onb2_title'), tr(context, 'onb2_body')),
+      _Slide(Icons.insights_rounded, AppColors.sage, tr(context, 'onb3_title'), tr(context, 'onb3_body')),
     ];
     final isLast = index == slides.length - 1;
 
@@ -89,8 +89,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
-                            child: Text(s.emoji,
-                                style: const TextStyle(fontSize: 40)),
+                            child: Icon(s.icon, color: AppColors.ink, size: 40),
                           ),
                         ),
                         const SizedBox(height: 36),

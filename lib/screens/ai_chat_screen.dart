@@ -484,7 +484,7 @@ class _BreathingAvatarState extends State<_BreathingAvatar>
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: const Text('🙂', style: TextStyle(fontSize: 22)),
+        child: Icon(Icons.face_retouching_natural_rounded, color: AppColors.paper, size: 24),
       ),
     );
   }

@@ -468,29 +468,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              TweenAnimationBuilder<double>(
-                                tween: Tween(begin: 0.0, end: 1.0),
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeOutCubic,
-                                builder: (context, value, child) {
-                                  return Opacity(
-                                    opacity: value,
-                                    child: Transform.scale(
-                                      scale: 0.9 + (0.1 * value),
-                                      alignment: Alignment.centerLeft,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    const AppLogo(size: 36),
-                                    const SizedBox(width: 10),
-                                    Text('Learn Buddy',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium),
-                                  ],
+                              Expanded(
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween(begin: 0.0, end: 1.0),
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, value, child) {
+                                    return Opacity(
+                                      opacity: value,
+                                      child: Transform.scale(
+                                        scale: 0.9 + (0.1 * value),
+                                        alignment: Alignment.centerLeft,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: Row(
+                                    children: [
+                                      const AppLogo(size: 36),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text('Learn Buddy',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -1153,56 +1159,62 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         return Padding(
                                           padding:
                                               const EdgeInsets.only(bottom: 12),
-                                          child: Row(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Expanded(
-                                                flex: 2,
-                                                child: Text(m['subject'],
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w600)),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: FocusGlowWrapper(
-                                                  child: TextField(
-                                                    controller:
-                                                        _obtainedControllers[
-                                                            m['subject']],
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    onChanged: (val) =>
-                                                        previousTestMarks[idx]
-                                                            ['obtained'] = val,
-                                                    decoration:
-                                                        const InputDecoration(
-                                                            hintText:
-                                                                'Obtained',
-                                                            isDense: true),
-                                                  ),
-                                                ),
-                                              ),
-                                              const Text(' / ',
-                                                  style: TextStyle(
+                                              Text(m['subject'],
+                                                  style: const TextStyle(
                                                       fontWeight:
-                                                          FontWeight.w600)),
-                                              Expanded(
-                                                child: FocusGlowWrapper(
-                                                  child: TextField(
-                                                    controller:
-                                                        _totalControllers[
-                                                            m['subject']],
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    onChanged: (val) =>
-                                                        previousTestMarks[idx]
-                                                            ['total'] = val,
-                                                    decoration:
-                                                        const InputDecoration(
-                                                            hintText: 'Total',
-                                                            isDense: true),
+                                                          FontWeight.w600,
+                                                      fontSize: 15)),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: FocusGlowWrapper(
+                                                      child: TextField(
+                                                        controller:
+                                                            _obtainedControllers[
+                                                                m['subject']],
+                                                        keyboardType:
+                                                            TextInputType.number,
+                                                        onChanged: (val) =>
+                                                            previousTestMarks[idx]
+                                                                ['obtained'] = val,
+                                                        decoration:
+                                                            const InputDecoration(
+                                                                hintText:
+                                                                    'Obtained',
+                                                                isDense: true),
+                                                      ),
+                                                    ),
                                                   ),
-                                                ),
+                                                  const Padding(
+                                                    padding: EdgeInsets.symmetric(horizontal: 12),
+                                                    child: Text(' / ',
+                                                        style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w600)),
+                                                  ),
+                                                  Expanded(
+                                                    child: FocusGlowWrapper(
+                                                      child: TextField(
+                                                        controller:
+                                                            _totalControllers[
+                                                                m['subject']],
+                                                        keyboardType:
+                                                            TextInputType.number,
+                                                        onChanged: (val) =>
+                                                            previousTestMarks[idx]
+                                                                ['total'] = val,
+                                                        decoration:
+                                                            const InputDecoration(
+                                                                hintText: 'Total',
+                                                                isDense: true),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),

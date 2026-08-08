@@ -270,7 +270,7 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
                                                 shape: BoxShape.circle,
                                               ),
                                               alignment: Alignment.center,
-                                              child: const Text('🙂', style: TextStyle(fontSize: 24)),
+                                              child: Icon(Icons.face_retouching_natural_rounded, color: AppColors.paper, size: 26),
                                             ),
                                     ),
                             ),
