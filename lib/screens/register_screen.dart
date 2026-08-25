@@ -199,6 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _processMarksheet(Uint8List bytes, String filename) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _marksheetMode = MarksheetEntryMode.loading);
 
     try {
@@ -367,6 +368,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => isLoading = true);
 
     try {
@@ -423,6 +425,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submitFinalDetails() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => isLoading = true);
 
     final result = await AuthService.updateProfile(

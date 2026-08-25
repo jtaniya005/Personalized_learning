@@ -65,7 +65,7 @@ class AuthService {
       }
       request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
       
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 15));
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
       final response = await http.Response.fromStream(streamedResponse);
       final data = jsonDecode(response.body);
 
