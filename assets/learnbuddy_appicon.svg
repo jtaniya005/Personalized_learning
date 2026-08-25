@@ -4,16 +4,13 @@
       <stop offset="0%" stop-color="#FF6F59"/>
       <stop offset="100%" stop-color="#FFA531"/>
     </linearGradient>
-    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="40"/>
-    </filter>
   </defs>
 
   <!-- App-icon background: warm notebook paper -->
   <rect x="0" y="0" width="1024" height="1024" fill="#FBF7EF"/>
 
   <!-- Soft marigold glow behind the badge -->
-  <rect x="132" y="223" width="760" height="760" rx="213" fill="#FFA531" opacity="0.35" filter="url(#softGlow)"/>
+  <rect x="132" y="223" width="760" height="760" rx="213" fill="#FFA531" opacity="0.35" />
 
   <!-- Main badge — coral to marigold gradient, rounded square -->
   <rect x="132" y="132" width="760" height="760" rx="213" fill="url(#badgeGradient)"/>

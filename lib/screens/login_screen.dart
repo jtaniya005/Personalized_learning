@@ -52,49 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      if (cred.user != null && !cred.user!.emailVerified) {
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          setState(() => isLoading = false);
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Verify your email'),
-              content: const Text('Please verify your email — check your inbox.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                  },
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(ctx).pop();
-                    try {
-                      await cred.user?.sendEmailVerification();
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Verification email resent')),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: ${e.toString()}')),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Resend verification email'),
-                ),
-              ],
-            ),
-          );
-        }
-        return;
-      }
-
       if (mounted) {
         setState(() => isLoading = false);
         _goHome();

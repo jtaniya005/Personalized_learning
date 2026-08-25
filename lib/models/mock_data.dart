@@ -21,7 +21,7 @@ enum ChapterStatus { done, inProgress, locked }
 
 class Chapter {
   final String title;
-  final String tag; // e.g. "Exam favourite", "Weak area", "Quick revise"
+  final String tag;
   final Color tagColor;
   final String duration;
   final ChapterStatus status;

@@ -49,6 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   List<String> customSubjects = [];
 
   MarksheetEntryMode _marksheetMode = MarksheetEntryMode.options;
+  List<String> _marksheetWarnings = [];
 
   final Map<String, TextEditingController> _obtainedControllers = {};
   final Map<String, TextEditingController> _totalControllers = {};
@@ -206,6 +207,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (result['success']) {
         final data = result['data'];
         
+        if (data['warnings'] != null) {
+          _marksheetWarnings = List<String>.from(data['warnings']);
+        } else {
+          _marksheetWarnings = [];
+        }
+
         if (data['previous_class_percentage'] != null) {
           percentageController.text = data['previous_class_percentage'].toString();
         }
@@ -368,37 +375,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
       );
       await cred.user?.updateDisplayName(name);
-      await cred.user?.sendEmailVerification();
-      await FirebaseAuth.instance.signOut();
 
       if (mounted) {
-        setState(() => isLoading = false);
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Check your email'),
-            content: const Text('We have sent a verification link to your email. Please verify your account before logging in.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        setState(() {
+          isLoading = false;
+          _accountDetailsValidated = true;
+        });
       }
     } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Registration failed')),
-        );
+      if (e.code == 'email-already-in-use') {
+        try {
+          final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          await cred.user?.updateDisplayName(name);
+          if (mounted) {
+            setState(() {
+              isLoading = false;
+              _accountDetailsValidated = true;
+            });
+          }
+        } catch (loginError) {
+          if (mounted) {
+            setState(() => isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Account exists, but password incorrect. Please login instead.')),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() => isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Registration failed')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -428,13 +440,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (result['success']) {
       weakSubjectsNotifier.value = selectedWeakSubjects.toList();
       dailyGoalMinutes.value = goalMinutes;
+      
+      final user = FirebaseAuth.instance.currentUser;
+      try {
+        await user?.sendEmailVerification();
+      } catch (e) {
+        debugPrint('Email verification failed to send: $e');
+      }
+
       if (mounted) {
-        final name = nameController.text.trim();
         Navigator.of(context).pushReplacement(
           FadeSlidePageRoute(
             page: HomeScreen(
               studentClass: selectedClass,
-              studentName: name.isEmpty ? 'Student' : name,
+              studentName: nameController.text.trim(),
               avatarIndex: selectedAvatar,
             ),
           ),
@@ -1138,6 +1157,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     children: [
                                       if (_marksheetMode ==
                                           MarksheetEntryMode.review) ...[
+                                        if (_marksheetWarnings.isNotEmpty)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 10, horizontal: 14),
+                                            margin:
+                                                const EdgeInsets.only(bottom: 12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.withOpacity(0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                  color: Colors.orange),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    const Icon(
+                                                        Icons.warning_amber_rounded,
+                                                        color: Colors.deepOrange,
+                                                        size: 20),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                          'A few things look off — please double check before confirming.',
+                                                          style: TextStyle(
+                                                              color: Colors.deepOrange,
+                                                              fontWeight:
+                                                                  FontWeight.w700)),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                                ..._marksheetWarnings.map((w) => Padding(
+                                                  padding: const EdgeInsets.only(top: 4, left: 28),
+                                                  child: Text("• $w", style: TextStyle(color: Colors.deepOrange.shade700, fontSize: 13, height: 1.4)),
+                                                )),
+                                              ],
+                                            ),
+                                          ),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 10, horizontal: 14),
