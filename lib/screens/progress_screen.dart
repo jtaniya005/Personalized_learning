@@ -4,7 +4,9 @@ import '../theme/app_theme.dart';
 import '../widgets/notebook_card.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/paper_texture.dart';
+import '../models/subject_utils.dart';
 import '../models/mock_data.dart';
+import '../services/auth_service.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -14,9 +16,52 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
+  List<SubjectInfo> _subjects = [];
+  int _streakDays = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await AuthService.getProfile();
+    if (profile != null && mounted) {
+      final studentClass = profile['student_class'] as int? ?? 10;
+      final stream = profile['stream'] as String?;
+      final weakSubjects = (profile['weak_subjects'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+      final streakDays = profile['streak_days'] as int? ?? 0;
+
+      setState(() {
+        _subjects = buildSubjectList(
+          studentClass: studentClass,
+          stream: stream,
+          weakSubjects: weakSubjects,
+        );
+        _streakDays = streakDays;
+        _isLoading = false;
+      });
+    } else if (mounted) {
+      setState(() {
+        _subjects = buildSubjectList(
+          studentClass: 10,
+          stream: null,
+          weakSubjects: [],
+        );
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final weakChapters = mockWeakChapters;
+    final weakSubjects = _subjects.where((s) => s.isWeak).toList();
+    // TODO: wire to /progress/weekly-activity when built
     final maxMinutes = mockWeekActivity
         .map((d) => d.minutes)
         .reduce((a, b) => a > b ? a : b)
@@ -26,10 +71,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
       child: RefreshIndicator(
         color: AppColors.marigold,
         onRefresh: () async {
-          await Future.delayed(const Duration(seconds: 1));
+          await _loadProfile();
         },
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           children: [
           FadeSlideIn(
             index: 0,
@@ -48,7 +93,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               children: [
                 Expanded(
                   child: _StatTile(
-                    value: '12',
+                    value: '$_streakDays',
                     label: tr(context, 'stat_streak'),
                     icon: Icons.local_fire_department_rounded,
                     color: AppColors.marigoldDeep,
@@ -56,8 +101,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
+                  // TODO: wire to /progress/summary for real avg score when built
                   child: _StatTile(
-                    value: '76%',
+                    value: '—',
                     label: tr(context, 'stat_score'),
                     icon: Icons.emoji_events_rounded,
                     color: AppColors.sage,
@@ -66,7 +112,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _StatTile(
-                    value: '${weakChapters.length}',
+                    value: '${weakSubjects.length}',
                     label: tr(context, 'stat_weak'),
                     icon: Icons.flag_rounded,
                     color: AppColors.coral,
@@ -78,6 +124,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           const SizedBox(height: 28),
 
         // ── Weekly activity ──
+        // TODO: wire to /progress/weekly-activity when built
         Text(tr(context, 'this_week'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
         NotebookCard(
@@ -139,65 +186,90 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ),
         const SizedBox(height: 28),
 
-        // ── Subject-wise progress ──
+        // ── Subject-wise progress — now from real profile data ──
         Text(tr(context, 'subject_wise'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
-        NotebookCard(
-          holeCount: 5,
-          child: Column(
-            children: mockSubjects.map((s) {
-              final isLast = s == mockSubjects.last;
-              return Padding(
-                padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(s.icon, size: 16, color: s.color),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(s.name,
-                              style: Theme.of(context).textTheme.bodyLarge)),
-                        Text('${(s.progress * 100).round()}%',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800, color: s.color)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: s.progress),
-                        duration: const Duration(milliseconds: 700),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, _) => Stack(
-                          children: [
-                            Container(height: 8, color: AppColors.rule),
-                            FractionallySizedBox(
-                              widthFactor: value,
-                              child: Container(
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [s.color, AppColors.coral],
+        if (_isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: CircularProgressIndicator(color: AppColors.marigold),
+            ),
+          )
+        else
+          NotebookCard(
+            holeCount: 5,
+            child: Column(
+              children: _subjects.asMap().entries.map((entry) {
+                final s = entry.value;
+                final isLast = entry.key == _subjects.length - 1;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(s.icon, size: 16, color: s.color),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(s.name,
+                                style: Theme.of(context).textTheme.bodyLarge)),
+                          if (s.isWeak) ...[
+                            Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.coral.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text('Needs focus',
+                                  style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.coral)),
+                            ),
+                          ],
+                          // TODO: wire to real subject progress when progress module is built
+                          Text('${(s.progress * 100).round()}%',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800, color: s.color)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: s.progress),
+                          duration: const Duration(milliseconds: 700),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) => Stack(
+                            children: [
+                              Container(height: 8, color: AppColors.rule),
+                              FractionallySizedBox(
+                                widthFactor: value,
+                                child: Container(
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [s.color, AppColors.coral],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-        ),
         const SizedBox(height: 28),
 
-        // ── Weak areas ──
+        // ── Weak areas — now based on real weak_subjects from profile ──
         Row(
           children: [
             Text(tr(context, 'practice_first'),
@@ -209,7 +281,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 color: AppColors.coral.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text('${weakChapters.length}',
+              child: Text('${weakSubjects.length}',
                   style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -218,66 +290,80 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...weakChapters.asMap().entries.map((entry) {
-          final i = entry.key;
-          final w = entry.value;
-          return FadeSlideIn(
-            index: 4 + i,
+        if (weakSubjects.isEmpty)
+          NotebookCard(
+            holeCount: 3,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: NotebookCard(
-                holeCount: 3,
-                onTap: () {},
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(w.subject.name,
-                                  style: Theme.of(context).textTheme.labelSmall),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.coral.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text('Needs focus',
-                                    style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.coral)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          Text(w.chapter.title,
-                              style: Theme.of(context).textTheme.titleMedium),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.coral,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(tr(context, 'practice_btn'),
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  'No weak subjects flagged — great job! 🎉',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
             ),
-          );
-        }),
+          )
+        else
+          ...weakSubjects.asMap().entries.map((entry) {
+            final i = entry.key;
+            final w = entry.value;
+            return FadeSlideIn(
+              index: 4 + i,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: NotebookCard(
+                  holeCount: 3,
+                  // TODO: wire onTap to navigate to subject-specific practice when built
+                  onTap: () {},
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(w.icon, size: 16, color: w.color),
+                                const SizedBox(width: 8),
+                                Text(w.name,
+                                    style: Theme.of(context).textTheme.titleMedium),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.coral.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text('Needs focus',
+                                      style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.coral)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.coral,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(tr(context, 'practice_btn'),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
         ],
         ),
       ),

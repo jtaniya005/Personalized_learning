@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/notebook_card.dart';
-import '../models/mock_data.dart';
+import '../models/subject_utils.dart';
+import '../services/auth_service.dart';
 import '../widgets/animated_scale_press.dart';
 import '../widgets/fade_slide_in.dart';
 
@@ -15,10 +16,63 @@ class StudyMaterialScreen extends StatefulWidget {
 
 class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
   int selectedSubject = 0;
+  List<SubjectInfo> _subjects = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubjects();
+  }
+
+  Future<void> _loadSubjects() async {
+    final profile = await AuthService.getProfile();
+    if (profile != null && mounted) {
+      final studentClass = profile['student_class'] as int? ?? 10;
+      final stream = profile['stream'] as String?;
+      final weakSubjects = (profile['weak_subjects'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+
+      setState(() {
+        _subjects = buildSubjectList(
+          studentClass: studentClass,
+          stream: stream,
+          weakSubjects: weakSubjects,
+        );
+        _isLoading = false;
+      });
+    } else if (mounted) {
+      setState(() {
+        _subjects = buildSubjectList(
+          studentClass: 10,
+          stream: null,
+          weakSubjects: [],
+        );
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final subject = mockSubjects[selectedSubject];
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.marigold),
+      );
+    }
+
+    if (_subjects.isEmpty) {
+      return Center(
+        child: Text(
+          'No subjects found for your class/stream.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
+    final subject = _subjects[selectedSubject];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
@@ -31,15 +85,15 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
               style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 20),
 
-          // Subject selector chips
+          // Subject selector chips — now from real data
           SizedBox(
             height: 40,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: mockSubjects.length,
+              itemCount: _subjects.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, i) {
-                final s = mockSubjects[i];
+                final s = _subjects[i];
                 final selected = i == selectedSubject;
                 return AnimatedScalePress(
                   child: GestureDetector(
@@ -56,13 +110,26 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
                         ),
                       ),
                       alignment: Alignment.center,
-                      child: Text(
-                        s.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: selected ? Colors.white : AppColors.inkSoft,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            s.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: selected ? Colors.white : AppColors.inkSoft,
+                            ),
+                          ),
+                          if (s.isWeak) ...[
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.flag_rounded,
+                              size: 12,
+                              color: selected ? Colors.white.withOpacity(0.8) : AppColors.coral,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -72,91 +139,37 @@ class _StudyMaterialScreenState extends State<StudyMaterialScreen> {
           ),
           const SizedBox(height: 22),
 
+          // TODO: wire to /subjects/{id}/chapters when built
+          // For now, show a placeholder message since chapters data
+          // requires the chapters API which is not yet implemented.
           Expanded(
-            child: ListView.separated(
-              key: ValueKey(selectedSubject),
-              padding: const EdgeInsets.only(bottom: 100),
-              itemCount: subject.chapters.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (context, i) {
-                final c = subject.chapters[i];
-                
-                final isDone = c.status == ChapterStatus.done;
-                final isLocked = c.status == ChapterStatus.locked;
-                final isInProgress = c.status == ChapterStatus.inProgress;
-                
-                Color borderColor = AppColors.rule;
-                if (isDone) borderColor = AppColors.teal;
-                if (isInProgress) borderColor = AppColors.marigold;
-                
-                return FadeSlideIn(
-                  index: i,
-                  child: Opacity(
-                    opacity: isLocked ? 0.6 : 1.0,
-                    child: NotebookCard(
-                    holeCount: 3,
-                    borderColor: borderColor,
-                    onTap: isLocked ? null : () {},
-                    child: Row(
+            child: Center(
+              child: FadeSlideIn(
+                index: 0,
+                child: NotebookCard(
+                  holeCount: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: c.tagColor.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      c.tag.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.3,
-                                        color: c.tagColor,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isDone) ...[
-                                    const SizedBox(width: 8),
-                                    const Icon(Icons.check_circle_rounded, color: AppColors.teal, size: 16),
-                                  ] else if (isLocked) ...[
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.lock_rounded, color: AppColors.inkSoft, size: 16),
-                                  ]
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(c.title,
-                                  style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(Icons.schedule_rounded,
-                                      size: 13, color: AppColors.inkSoft),
-                                  const SizedBox(width: 4),
-                                  Text(c.duration,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium),
-                                ],
-                              ),
-                            ],
-                          ),
+                        Icon(subject.icon, size: 40, color: subject.color.withOpacity(0.5)),
+                        const SizedBox(height: 16),
+                        Text(
+                          subject.name,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        Icon(Icons.chevron_right_rounded,
-                            color: AppColors.inkSoft),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Chapters and study material\ncoming soon!',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ],
                     ),
-                    ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
         ],

@@ -5,6 +5,7 @@ import '../state/app_settings.dart';
 import '../widgets/notebook_card.dart';
 import '../widgets/app_logo.dart';
 import '../models/mock_data.dart';
+import '../models/subject_utils.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/focus_glow_wrapper.dart';
 import '../widgets/primary_glow_button.dart';
@@ -61,69 +62,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   List<String> _getSubjectsForClassAndStream() {
-    if (selectedClass == 10) {
-      return [
-        'Mathematics',
-        'Science',
-        'Social Science',
-        'English',
-        'Hindi',
-        'Computer Applications/IT'
-      ];
-    } else if (selectedClass == 12 && selectedStream != null) {
-      if (selectedStream == 'Science (PCM)')
-        return ['Physics', 'Chemistry', 'Mathematics', 'English'];
-      else if (selectedStream == 'Science (PCB)')
-        return ['Physics', 'Chemistry', 'Biology', 'English'];
-      else if (selectedStream == 'Commerce')
-        return ['Accountancy', 'Business Studies', 'Economics', 'English'];
-      else if (selectedStream == 'Arts/Humanities')
-        return [
-          'History',
-          'Political Science',
-          'Geography',
-          'Economics',
-          'English'
-        ];
-    }
-    return [];
+    return getSubjectsForClassAndStream(selectedClass, selectedStream);
   }
 
   IconData _getSubjectIcon(String subjectName) {
-    switch (subjectName) {
-      case 'Mathematics':
-        return Icons.calculate_rounded;
-      case 'Science':
-        return Icons.science_rounded;
-      case 'Social Science':
-        return Icons.public_rounded;
-      case 'English':
-        return Icons.menu_book_rounded;
-      case 'Hindi':
-        return Icons.translate_rounded;
-      case 'Computer Applications/IT':
-        return Icons.computer_rounded;
-      case 'Physics':
-        return Icons.biotech_rounded;
-      case 'Chemistry':
-        return Icons.science_rounded;
-      case 'Biology':
-        return Icons.eco_rounded;
-      case 'Accountancy':
-        return Icons.account_balance_wallet_rounded;
-      case 'Business Studies':
-        return Icons.business_center_rounded;
-      case 'Economics':
-        return Icons.trending_up_rounded;
-      case 'History':
-        return Icons.history_edu_rounded;
-      case 'Political Science':
-        return Icons.gavel_rounded;
-      case 'Geography':
-        return Icons.map_rounded;
-      default:
-        return Icons.book_rounded;
-    }
+    return getSubjectIcon(subjectName);
   }
 
   double _calculateProgress() {

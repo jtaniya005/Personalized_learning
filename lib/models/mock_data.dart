@@ -1,21 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-class Subject {
-  final String name;
-  final IconData icon;
-  final Color color;
-  final double progress; // 0..1
-  final List<Chapter> chapters;
-
-  const Subject({
-    required this.name,
-    required this.icon,
-    required this.color,
-    required this.progress,
-    required this.chapters,
-  });
-}
+// Note: The Subject class and mockSubjects list have been removed.
+// Subjects are now derived from the student's profile (class + stream)
+// via subject_utils.dart — see buildSubjectList().
 
 enum ChapterStatus { done, inProgress, locked }
 
@@ -68,6 +56,7 @@ final List<AvatarOption> avatarOptions = [
 ];
 
 /// Mock weekly study activity — swap for real per-student data.
+/// TODO: wire to /progress/weekly-activity when built
 final List<DayActivity> mockWeekActivity = const [
   DayActivity('M', 25),
   DayActivity('T', 40),
@@ -77,99 +66,3 @@ final List<DayActivity> mockWeekActivity = const [
   DayActivity('S', 60),
   DayActivity('S', 20, isToday: true),
 ];
-
-/// Mock dataset for Class 10 — swap for API/RAG response later.
-final List<Subject> mockSubjects = [
-  Subject(
-    name: 'Mathematics',
-    icon: Icons.functions_rounded,
-    color: AppColors.coral,
-    progress: 0.62,
-    chapters: [
-      Chapter(
-          title: 'Quadratic Equations',
-          tag: 'Exam favourite',
-          tagColor: AppColors.marigoldDeep,
-          duration: '45 min',
-          status: ChapterStatus.done),
-      Chapter(
-          title: 'Trigonometry Basics',
-          tag: 'Weak area',
-          tagColor: AppColors.coral,
-          duration: '30 min',
-          status: ChapterStatus.inProgress),
-      Chapter(
-          title: 'Pair of Linear Equations',
-          tag: 'Quick revise',
-          tagColor: AppColors.sage,
-          duration: '20 min',
-          status: ChapterStatus.locked),
-    ],
-  ),
-  Subject(
-    name: 'Science',
-    icon: Icons.science_rounded,
-    color: AppColors.sage,
-    progress: 0.40,
-    chapters: [
-      Chapter(
-          title: 'Chemical Reactions',
-          tag: 'Exam favourite',
-          tagColor: AppColors.marigoldDeep,
-          duration: '35 min',
-          status: ChapterStatus.inProgress),
-      Chapter(
-          title: 'Light — Reflection & Refraction',
-          tag: 'Weak area',
-          tagColor: AppColors.coral,
-          duration: '40 min',
-          status: ChapterStatus.locked),
-    ],
-  ),
-  Subject(
-    name: 'Social Science',
-    icon: Icons.public_rounded,
-    color: AppColors.skyInk,
-    progress: 0.78,
-    chapters: [
-      Chapter(
-          title: 'Nationalism in India',
-          tag: 'Quick revise',
-          tagColor: AppColors.sage,
-          duration: '25 min'),
-      Chapter(
-          title: 'Federalism',
-          tag: 'Exam favourite',
-          tagColor: AppColors.marigoldDeep,
-          duration: '30 min'),
-    ],
-  ),
-  Subject(
-    name: 'English',
-    icon: Icons.menu_book_rounded,
-    color: AppColors.marigoldDeep,
-    progress: 0.85,
-    chapters: [
-      Chapter(
-          title: 'A Letter to God',
-          tag: 'Quick revise',
-          tagColor: AppColors.sage,
-          duration: '15 min',
-          status: ChapterStatus.done),
-    ],
-  ),
-];
-
-/// Flattens every chapter tagged "Weak area" across all subjects,
-/// paired with its parent subject for display on the Progress screen.
-List<({Subject subject, Chapter chapter})> get mockWeakChapters {
-  final result = <({Subject subject, Chapter chapter})>[];
-  for (final s in mockSubjects) {
-    for (final c in s.chapters) {
-      if (c.tag == 'Weak area') {
-        result.add((subject: s, chapter: c));
-      }
-    }
-  }
-  return result;
-}

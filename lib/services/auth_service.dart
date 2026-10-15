@@ -19,6 +19,30 @@ class AuthService {
     return await user.getIdToken();
   }
 
+  /// Fetch the logged-in student's full profile from the backend.
+  /// Returns the profile map on success, or null on failure.
+  static Future<Map<String, dynamic>?> getProfile() async {
+    final url = Uri.parse('$baseUrl/user/profile');
+    try {
+      final token = await _getToken();
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getProfile failed: $e');
+      return null;
+    }
+  }
+
   static Future<Map<String, dynamic>> updateProfile({
     String? name,
     required int studentClass,

@@ -5,7 +5,9 @@ import '../state/app_settings.dart';
 import '../widgets/notebook_card.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/paper_texture.dart';
+import '../models/subject_utils.dart';
 import '../models/mock_data.dart';
+import '../services/auth_service.dart';
 import 'study_material_screen.dart';
 import 'ai_chat_screen.dart';
 import 'progress_screen.dart';
@@ -150,7 +152,7 @@ const List<String> _quotes = [
   "Progress, not perfection — one chapter at a time. 📖",
 ];
 
-class _HomeBody extends StatelessWidget {
+class _HomeBody extends StatefulWidget {
   final int studentClass;
   final String studentName;
   final int avatarIndex;
@@ -166,19 +168,66 @@ class _HomeBody extends StatelessWidget {
   });
 
   @override
+  State<_HomeBody> createState() => _HomeBodyState();
+}
+
+class _HomeBodyState extends State<_HomeBody> {
+  List<SubjectInfo> _subjects = [];
+  int _streakDays = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await AuthService.getProfile();
+    if (profile != null && mounted) {
+      final studentClass = profile['student_class'] as int? ?? widget.studentClass;
+      final stream = profile['stream'] as String?;
+      final weakSubjects = (profile['weak_subjects'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+      final streakDays = profile['streak_days'] as int? ?? 0;
+
+      setState(() {
+        _subjects = buildSubjectList(
+          studentClass: studentClass,
+          stream: stream,
+          weakSubjects: weakSubjects,
+        );
+        _streakDays = streakDays;
+        _isLoading = false;
+      });
+    } else if (mounted) {
+      // Offline fallback — derive from widget params with no weak subjects
+      setState(() {
+        _subjects = buildSubjectList(
+          studentClass: widget.studentClass,
+          stream: null,
+          weakSubjects: [],
+        );
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final avatar = avatarOptions[avatarIndex % avatarOptions.length];
+    final avatar = avatarOptions[widget.avatarIndex % avatarOptions.length];
     final quote = _quotes[DateTime.now().day % _quotes.length];
 
     return PaperTexture(
       child: RefreshIndicator(
         color: AppColors.marigold,
         onRefresh: () async {
-          // Simulate fetch
-          await Future.delayed(const Duration(seconds: 1));
+          await _loadProfile();
         },
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
             // ── Top bar: settings ──
             FadeSlideIn(
@@ -186,7 +235,7 @@ class _HomeBody extends StatelessWidget {
             child: Align(
               alignment: Alignment.topRight,
               child: GestureDetector(
-                onTap: onOpenSettings,
+                onTap: widget.onOpenSettings,
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -230,15 +279,15 @@ class _HomeBody extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${tr(context, _greetingKey())}, $studentName! 👋',
+                      Text('${tr(context, _greetingKey())}, ${widget.studentName}! 👋',
                           style: Theme.of(context).textTheme.headlineMedium),
                       const SizedBox(height: 2),
-                      Text('${tr(context, 'class_label')} $studentClass · ${tr(context, 'board_exam_mode')}',
+                      Text('${tr(context, 'class_label')} ${widget.studentClass} · ${tr(context, 'board_exam_mode')}',
                           style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),
-                const _StreakBadge(days: 12),
+                _StreakBadge(days: _streakDays),
               ],
             ),
           ),
@@ -265,12 +314,13 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 22),
 
           // ── Buddy nudge ──
+          // TODO: wire to /chat/daily-checkin when built
           FadeSlideIn(
             index: 3,
             child: NotebookCard(
               background: AppColors.ink,
               holeCount: 4,
-              onTap: onOpenChat,
+              onTap: widget.onOpenChat,
               child: Row(
                 children: [
                   Container(
@@ -363,33 +413,52 @@ class _HomeBody extends StatelessWidget {
               children: [
                 Text(tr(context, 'todays_plan'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(width: 8),
-                const _DailyProgressRing(progress: 0.65),
+                // TODO: wire to /progress/summary when built
+                const _DailyProgressRing(progress: 0.0),
               ],
             ),
           ),
           const SizedBox(height: 14),
 
-          // ── Subject grid — colour-tinted, shadowed, with a mini ring ──
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: mockSubjects.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              childAspectRatio: 0.92,
+          // ── Subject grid — real data from profile ──
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: CircularProgressIndicator(color: AppColors.marigold),
+              ),
+            )
+          else if (_subjects.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  'No subjects found for your class/stream.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _subjects.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                childAspectRatio: 1.0,
+              ),
+              itemBuilder: (context, i) {
+                final s = _subjects[i];
+                return FadeSlideIn(
+                  index: 6 + i,
+                  child: _SubjectCard(subject: s),
+                );
+              },
             ),
-            itemBuilder: (context, i) {
-              final s = mockSubjects[i];
-              return FadeSlideIn(
-                index: 6 + i,
-                child: _SubjectCard(subject: s),
-              );
-            },
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -485,10 +554,10 @@ class _StreakBadgeState extends State<_StreakBadge>
 }
 
 /// A subject card with its own color identity: tinted background, a
-/// colored shadow, and a small animated progress ring in the corner —
-/// replaces the previous flat, same-beige-box look.
+/// colored shadow, and a small animated progress ring in the corner.
+/// Shows a "Needs focus" badge for weak subjects.
 class _SubjectCard extends StatelessWidget {
-  final Subject subject;
+  final SubjectInfo subject;
   const _SubjectCard({required this.subject});
 
   @override
@@ -541,7 +610,49 @@ class _SubjectCard extends StatelessWidget {
               _ProgressRing(progress: subject.progress, color: subject.color),
             ],
           ),
+          const SizedBox(height: 10),
+
+          // ── Weak subject badge or generic subtitle (replaces the old empty Spacer gap) ──
+          if (subject.isWeak)
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.coral.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.flag_rounded, size: 11, color: AppColors.coral),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Needs focus',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3,
+                      color: AppColors.coral,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                'Ready to start',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.inkSoft,
+                ),
+              ),
+            ),
+
           const Spacer(),
+
           Text(subject.name,
               style: Theme.of(context).textTheme.titleMedium,
               maxLines: 1,
