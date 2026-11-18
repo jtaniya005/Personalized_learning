@@ -12,7 +12,13 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
         print(f"[error] Unhandled exception on {request.url.path}: {exc!r}")
+        headers = {}
+        origin = request.headers.get("origin")
+        if origin:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
         return JSONResponse(
             status_code=500,
             content={"detail": "Something went wrong. Please try again."},
+            headers=headers,
         )

@@ -52,5 +52,6 @@ app.include_router(stub_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": settings.PROJECT_NAME}
