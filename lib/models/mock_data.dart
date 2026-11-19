@@ -26,7 +26,17 @@ class Chapter {
 class ChatMessage {
   final String text;
   final bool isUser;
-  const ChatMessage(this.text, this.isUser);
+  final String? audioBase64;
+  final String? ttsProvider;
+  final bool isVoice;
+
+  const ChatMessage(
+    this.text,
+    this.isUser, {
+    this.audioBase64,
+    this.ttsProvider,
+    this.isVoice = false,
+  });
 }
 
 class DayActivity {
