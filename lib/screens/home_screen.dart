@@ -12,6 +12,7 @@ import 'study_material_screen.dart';
 import 'ai_chat_screen.dart';
 import 'progress_screen.dart';
 import 'settings_screen.dart';
+import 'voice_assistant_screen.dart';
 import 'games/brain_break_menu.dart';
 import '../widgets/page_transitions.dart';
 
@@ -229,26 +230,69 @@ class _HomeBodyState extends State<_HomeBody> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
-            // ── Top bar: settings ──
+            // ── Top bar: voice assistant & settings ──
             FadeSlideIn(
-            index: 0,
-            child: Align(
-              alignment: Alignment.topRight,
-              child: GestureDetector(
-                onTap: widget.onOpenSettings,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.paperCard,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.rule),
+              index: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => VoiceAssistantScreen.withNewController(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF06B6D4)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.graphic_eq_rounded, size: 16, color: Colors.white),
+                          SizedBox(width: 5),
+                          Text(
+                            'Voice AI',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Icon(Icons.settings_outlined,
-                      size: 18, color: AppColors.inkSoft),
-                ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: widget.onOpenSettings,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.paperCard,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.rule),
+                      ),
+                      child: Icon(Icons.settings_outlined,
+                          size: 18, color: AppColors.inkSoft),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
           const SizedBox(height: 4),
 
           // ── Greeting with avatar ──

@@ -5,6 +5,7 @@ import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/notebook_card.dart';
 import '../widgets/voice_assistant_modal.dart';
+import 'voice_assistant_screen.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -322,7 +323,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
               // Voice Assistant Launcher Button
               GestureDetector(
-                onTap: _openVoiceAssistantModal,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => VoiceAssistantScreen.withNewController(),
+                    ),
+                  );
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
