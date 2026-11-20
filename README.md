@@ -1,114 +1,151 @@
-# Learn Buddy (UI)
+# Learn Buddy — Mobile Application (Flutter)
 
-Flutter UI for a Class 10/12 study app where an AI mentor — "Buddy" —
-proactively checks in and guides what to study next, instead of just
-answering questions when asked.
+A personalized study companion app built for **Class 10 and 12** students. Instead of waiting to be asked questions, the AI mentor — **Buddy** — proactively checks in, analyzes weak subject areas from student marksheets, structures study plans, and motivates students throughout their academic journey.
 
-## Design system — "Notebook & Marigold"
-Built to avoid the generic edtech blue/gradient look — pulls instead
-from the school notebook: cream ruled paper, ink, and a bright
-marigold highlighter accent.
+Built with **Flutter (Dart 3.3+)**, featuring Firebase Authentication, Tesseract OCR integration, local multilingual support (English & Hindi), brain break mini-games, and an integrated voice assistant modal.
 
-- **Colors**: paper cream `#FBF7EF`, ink `#20262B`, marigold `#FFA531`,
-  coral `#FF6F59`, sage `#3FA06A`, sky-ink `#2F5D6B`, plus teal
-  `#20B2A6` and grape `#8C6FE6` for avatar/logo variety.
-- **Type**: Fraunces (display/headings) + Plus Jakarta Sans (body) +
-  Space Mono (small labels/tags).
-- **Logo**: `widgets/app_logo.dart` — a layered book badge (learning)
-  with a spark accent badge (the "buddy"), not a text monogram, so it
-  reads as a real mark at any size and doubles as an app-icon source.
-- **Signature card**: `NotebookCard` — spiral-binder holes on the left
-  edge, with a press-scale micro-interaction on every tappable one.
+---
 
-## Dark mode & language (EN/HI)
-- `state/app_settings.dart` — two global toggles, propagated the same
-  way Theme does (survives navigation, no app restart):
-  - `isDarkNotifier` — dark mode. `AppColors` surface/text colors
-    (paper, card, rule, ink) are dynamic getters that read this; accent
-    colors (marigold, coral, sage, etc.) stay constant across themes.
-  - `languageNotifier` — 'en' / 'hi'. Propagated via a custom
-    `AppLocale` InheritedWidget wrapped around the Navigator in
-    `main.dart`'s `builder`. Call `tr(context, 'key')` anywhere to get
-    translated text — it also registers that widget to rebuild when
-    the language changes.
-- `settings_screen.dart` — reachable via the gear icon on Home:
-  - **Profile** — avatar/name/class, tap to edit in a bottom sheet;
-    changes flow back to Home via `Navigator.pop(result)`
-  - **Appearance** — Dark Mode switch, EN/HI language toggle
-  - **Notifications** — daily reminder (with time picker), streak alerts
-  - **Study preferences** — daily study goal (stepper), Buddy's tone
-    (Friendly / Strict / Motivational — feed this into your LangGraph
-    system prompt to actually change Buddy's personality)
-  - **About & Help** — rate app, feedback, support, terms, version
-  - **Log out** — clears the navigation stack back to Auth Choice
-- There's no separate language-selection screen anymore — the app
-  defaults to English and language lives in Settings, changeable
-  anytime, same as dark mode.
-- Subject names and chapter titles are curriculum content (not in the
-  `tr()` dictionary) — localize those from your backend/database.
+## 🎨 Design System — "Notebook & Marigold"
 
-## Flow
-Splash → Language select (English default) → Onboarding (3 slides) →
-**Auth choice** ("Log in" vs "I'm new here") →
-**Login** (existing users: email + password, Google, Phone OTP) or
-**Register** (new users: name, email, password, class, avatar picker,
-Google, Phone OTP) → Home (bottom-nav: Home, Study, Buddy, Progress)
+Designed to depart from generic edtech blue gradients and evoke the tactile, focused experience of a student's personal study notebook:
 
-Class is only asked once, at registration — login never asks again.
-The choice screen keeps "I already have an account" and "I'm new here"
-as two equally visible options, instead of defaulting everyone into
-one form with a small signup link at the bottom.
+- **Palette**: Paper cream (`#FBF7EF`), deep ink (`#20262B`), marigold highlighter (`#FFA531`), coral red (`#FF6F59`), and sage green (`#3FA06A`).
+- **Typography**: 
+  - **Headings**: *Fraunces* (expressive serif font giving an editorial, bookish feel)
+  - **Body text**: *Plus Jakarta Sans* (clean, highly legible modern sans-serif)
+  - **Metadata & Tags**: *Space Mono* (technical tags, chapter badges, and timestamps)
+- **Signature UI Elements**:
+  - `NotebookCard`: Cards styled with spiral-binder punch holes along the left edge and realistic paper textures.
+  - `AnimatedScalePress`: Tactile physical micro-interactions on button and card taps.
+  - `AppLogo`: Custom layered book mark with a spark emblem.
 
-## Screens included
-- `splash_screen.dart` — animated logo mark
-- `language_select_screen.dart` — sets app + chat language, English default
-- `onboarding_screen.dart` — 3 slides (personalized material, AI mentor,
-  progress tracking)
-- `auth_choice_screen.dart` — "Log in" vs "I'm new here", the fork
-  between returning and new students
-- `login_screen.dart` — email/password, Google, Phone OTP
-- `register_screen.dart` — name, email, password, confirm, class picker,
-  icon-based avatar picker (8 Material icons w/ gradient backgrounds,
-  no emoji), **weak subjects** multi-select (feeds Buddy's
-  personalization — stored in `weakSubjectsNotifier`), **daily study
-  goal** stepper (stored in `dailyGoalMinutes`), Google, Phone OTP
-- `phone_otp_screen.dart` — phone number → 4-digit code, shared by both
-  login and register flows
-- `home_screen.dart` — avatar in the greeting, streak, a daily quote
-  card, Buddy's proactive nudge, subject grid
-- `study_material_screen.dart` — subject chips + chapter list tagged
-  "Exam favourite" / "Weak area" / "Quick revise"
-- `ai_chat_screen.dart` — Buddy opens the conversation itself (typing →
-  observation → a structured "Today's plan" check-in card with Accept/
-  Later actions), plus a per-chat language switcher (English/Hindi/
-  Hinglish) independent of the app-wide language
-- `progress_screen.dart` — streak/avg-score/weak-spot stat tiles, a
-  7-day activity chart, subject-wise progress bars, and a
-  "practice these first" list built from every "Weak area" chapter
+---
 
-All data is mocked in `lib/models/mock_data.dart` — swap with your
-FastAPI + RAG/LangGraph responses when the backend is ready.
+## 📱 Core Features & User Journey
 
-## Run it
+```
+Splash Screen
+    │
+    ▼
+Onboarding Slides (3 Steps: Personalization, AI Mentor, Progress)
+    │
+    ▼
+Auth Choice ("Log In" vs "I'm New Here")
+    ├── Login Flow: Email + Password, Google Sign-In, Phone OTP
+    └── Register Flow: Name, Email, Password, Class (10/12), Avatar Picker,
+                       Weak Subjects multi-select, Daily Goal stepper
+    │
+    ▼
+Main Shell (Bottom Navigation)
+    ├── 🏠 Home: Proactive Buddy greeting, streak counter, daily quote, subject cards
+    ├── 📚 Study Material: Subjects, chapters categorized by "Exam favourite", "Weak area", "Quick revise"
+    ├── 🤖 Buddy (AI Chat): Proactive study planning check-ins, multi-language chat (EN/HI/Hinglish)
+    ├── 📊 Progress: Streak stats, 7-day activity chart, syllabus coverage, marksheet OCR upload
+    ├── 🎮 Brain Break: Mini-games (Math Sprint, Memory Match, Tic-Tac-Toe)
+    └── ⚙️ Settings: Profile editor, Dark Mode toggle, EN/HI language switcher, Buddy tone preferences
+```
+
+---
+
+## 🌟 Highlighted Modules
+
+### 1. Integrated Voice Assistant Modal
+Accessible directly from within the app, students can tap the microphone icon to launch an interactive voice sheet:
+- Real-time microphone audio recording via `record`.
+- Dynamic voice amplitude wave animations.
+- Plays backend audio replies using `audioplayers` or falls back to `flutter_tts`.
+- Toggleable server backend host (supports Android emulator `10.0.2.2:8000` or local network IP).
+
+### 2. Marksheet OCR Scanner
+- Allows students to upload their previous grade marksheet (PDF or image).
+- Pre-extracts data client-side (using `google_mlkit_text_recognition`) and uploads to the backend (`/api/v1/students/me/marksheet/extract`).
+- Automatically updates student profile with identified weak subjects and past percentage.
+
+### 3. Brain Break Mini-Games (`lib/screens/games/`)
+Gamified mental recharge modules to refresh students between intense study sessions:
+- **Math Sprint**: Quick-fire mental arithmetic against the clock.
+- **Memory Match**: Card-flipping cognitive concentration game.
+- **Tic-Tac-Toe**: Classic strategy puzzle.
+- Features custom confetti particle overlays and celebration dialogs.
+
+### 4. Dynamic Localization & Dark Mode
+- Global reactive state (`lib/state/app_settings.dart`) propagates dark mode and language (`EN` / `HI`) instantly without app restarts.
+- Uses `tr(context, 'key')` helper throughout the UI for seamless string translation.
+
+---
+
+## 🛠 Project Structure
+
+```
+learn_buddy/
+├── lib/
+│   ├── firebase_options.dart         # Generated Firebase configuration
+│   ├── main.dart                     # App entry point & AppLocale wrapper
+│   ├── models/
+│   │   ├── mock_data.dart            # Mock curriculum, chapters, and topics
+│   │   └── subject_utils.dart        # Stream and class subject mapper
+│   ├── screens/
+│   │   ├── ai_chat_screen.dart       # Buddy conversational interface
+│   │   ├── auth_choice_screen.dart   # Login vs Sign Up selection
+│   │   ├── home_screen.dart          # Main student dashboard
+│   │   ├── login_screen.dart         # Authentication screen
+│   │   ├── onboarding_screen.dart    # 3-step feature introduction
+│   │   ├── phone_otp_screen.dart     # Mobile OTP verification
+│   │   ├── progress_screen.dart      # Analytics & Marksheet scanner
+│   │   ├── register_screen.dart      # Student registration & onboarding
+│   │   ├── settings_screen.dart      # User preferences & profile settings
+│   │   ├── splash_screen.dart        # Animated splash
+│   │   ├── study_material_screen.dart# Chapters and study notes
+│   │   └── games/                    # Brain Break mini-games
+│   │       ├── brain_break_menu.dart
+│   │       ├── math_sprint_game.dart
+│   │       ├── memory_match_game.dart
+│   │       └── tic_tac_toe_game.dart
+│   ├── services/
+│   │   ├── auth_service.dart         # Firebase Auth & FastAPI profile sync
+│   │   └── voice_assistant_service.dart # Recording, TTS, & voice API
+│   ├── state/
+│   │   └── app_settings.dart         # ValueNotifiers for theme & language
+│   ├── theme/
+│   │   └── app_theme.dart            # AppColors, typography, & input styling
+│   └── widgets/
+│       ├── animated_scale_press.dart # Tappable press bounce animation
+│       ├── app_logo.dart             # Custom SVG book badge
+│       ├── confetti_overlay.dart     # Game celebration confetti
+│       ├── notebook_card.dart        # Spiral notebook styled container
+│       └── voice_assistant_modal.dart# Voice dialog with animated waves
+├── assets/                           # Local images, badges, and fonts
+└── pubspec.yaml                      # Project dependencies & assets
+```
+
+---
+
+## 🚀 Running the App
+
+### 1. Prerequisites
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.19+)
+- Android Studio / Xcode for mobile emulators
+
+### 2. Configure Firebase
+Ensure your Firebase configuration is linked:
 ```bash
+# If using FlutterFire CLI:
+flutterfire configure
+```
+
+### 3. Run the App
+```bash
+cd learn_buddy
+
+# Fetch Flutter dependencies
 flutter pub get
+
+# Run on an attached device or emulator
 flutter run
 ```
 
-## Next wiring points (for your backend)
-- `register_screen.dart` → `_createAccount()` — replace with your real
-  sign-up call (store name, email, password hash, class, avatar).
-- `login_screen.dart` → `_goHome()` — replace with your auth call;
-  fetch the student's saved class/name/avatar instead of the hardcoded
-  defaults shown here.
-- `phone_otp_screen.dart` → wire to Firebase Auth or your SMS/OTP
-  provider; both "Send code" and "Verify" are currently just UI state.
-- `ai_chat_screen.dart` → the intro sequence (`_runIntroSequence`) and
-  the check-in card are exactly where your LangGraph "check-in" node
-  should plug in — it should look at real student activity (streak,
-  last-studied chapter, weak areas) to decide what Buddy opens with,
-  instead of the hardcoded Trigonometry example here. `chatLanguage`
-  should be passed to your backend so replies come back in the chosen
-  language.
-- `mock_data.dart` → replace subjects/chapters with data fetched per
-  student class from your database.
+> **Backend Connectivity**: By default, `AuthService` targets:
+> - Android Emulator: `http://10.0.2.2:8000/api/v1`
+> - iOS Simulator / Desktop / Web: `http://localhost:8000/api/v1`
+> Ensure your FastAPI backend (`learn_buddy_backend`) is running.
