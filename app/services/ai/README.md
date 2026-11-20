@@ -1,18 +1,19 @@
-# AI Mentor (Buddy) — not started
+# AI Mentor (Buddy) Services
 
-This folder is intentionally empty. Nothing imports from it — the
-`/api/chat/*` routes in `_not_yet_built.py` return `501` and don't
-touch this package. Auth, Profile/Settings, and the database layer
-are fully independent of anything here.
+This package contains the AI and retrieval components for the Learn Buddy platform.
 
-## When you're ready to start
+## Modules
 
-- `rag_service.py` — embeds chapter/topic content into ChromaDB,
-  retrieves relevant chunks for a student's question.
-- `langgraph_agent.py` — the LangGraph graph. Needs at least two entry
-  points: a reactive node (message in -> RAG -> reply out) and a
-  proactive check-in node (reads streak/last-studied chapter/weak
-  subjects and generates the opening message without waiting for the
-  student to ask).
-- `prompts.py` — system prompts per `buddy_tone` (friendly / strict /
-  motivational), already stored on `User.buddy_tone`.
+- **`rag_service.py` (Implemented)**:
+  - Vector search service powered by **Pinecone** and **Sentence-Transformers** (`all-mpnet-base-v2`).
+  - Supports query retrieval across multiple namespaces: `careers`, `colleges`, `syllabus`, `faqs`, and `conversations`.
+  - Configurable via `PINECONE_API_KEY` and `PINECONE_INDEX_NAME` in `.env`.
+
+- **`langgraph_agent.py` (Planned)**:
+  - Conversational LangGraph workflow for Buddy.
+  - Multi-node graph:
+    1. **Proactive Check-In Node**: Reads student profile, streak, last-studied chapters, and weak areas to generate timely study nudges.
+    2. **Reactive Q&A Node**: Contextual RAG question answering combining syllabus retrieval with conversational history.
+
+- **`prompts.py` (Planned)**:
+  - Tone-specific system prompts dynamically selected based on student preference (`User.buddy_tone`: *friendly*, *strict*, *motivational*).

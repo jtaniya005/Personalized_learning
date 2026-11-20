@@ -1,155 +1,165 @@
-# Learn Buddy — Backend
+# Learn Buddy — Backend API
 
-FastAPI backend for the Learn Buddy app, structured to match your
-other project (plain `Settings` class, `bcrypt` directly, SQLite
-fallback in `db/database.py`, table creation in `main.py`). Uses
-**Supabase Postgres** as the database.
+FastAPI backend for **Learn Buddy**, providing student authentication token verification, profile management, automated marksheet OCR processing, Pinecone vector RAG search, and educational progression tracking.
 
-**Auth and Profile/Settings are fully working** end-to-end. Every
-other module from the SOW is stubbed (`501`) so the full API surface
-is visible in `/docs` from day one.
+Built with Python 3.10+, FastAPI, SQLAlchemy, Supabase Postgres (with local SQLite fallback), Firebase Admin SDK, Tesseract OCR, and Pinecone.
 
-## What's actually built
+---
 
-| Module | Status |
-|---|---|
-| Auth (register, login, Google, phone OTP, logout, refresh) | Working |
-| Profile & Settings | Working |
-| Study Material | Stub (`501`) |
-| Progress & Analytics | Stub (`501`) |
-| Career Guidance | Stub (`501`) |
-| Notifications | Stub (`501`) |
-| AI Mentor (Buddy) | Not started — see `app/services/ai/README.md` |
+## 🚀 Key Capabilities
 
-## How "unique ID per user" works
+- **Firebase Authentication & Session Management**: Validates Firebase ID tokens on incoming requests. Automatically provisions or synchronizes student profile records in PostgreSQL on first login.
+- **Resilient Dual-Database Architecture**: Primary connection to **Supabase Postgres**; if the cloud database is paused or unreachable, it falls back seamlessly to a local **SQLite** (`sql_app.db`) file for uninterrupted offline development.
+- **Marksheet OCR Processing**: Extracts student names, classes, subject breakdown, obtained marks, total marks, and percentages from PDF and image marksheets using Tesseract OCR, OpenCV, and PyMuPDF. Cross-checks results against the student's existing profile to flag identity discrepancies.
+- **RAG Vector Search (Pinecone)**: Embeds queries using `SentenceTransformer` (`all-mpnet-base-v2`) and searches relevant Pinecone namespaces (`careers`, `colleges`, `syllabus`, `faqs`, `conversations`).
+- **RESTful Architecture**: Clean modular routers (`app/api/`), Pydantic validation, middleware logging, and automated OpenAPI documentation (`/docs`).
 
-Every account — however the student signs up (email/password, Google,
-or phone OTP) — gets one row in the `users` table with an integer
-primary key (`id`). That ID is inside every JWT (`sub` claim), so on
-every request `get_current_user` (in `app/dependencies/auth_deps.py`)
-uses it to look up **that exact student's** row and return their
-profile — class, avatar, weak subjects, streak, settings.
+---
 
-1. `POST /auth/register` (or `/auth/google`, `/auth/phone/verify-otp`)
-   creates the `users` row, returns an access + refresh token.
-2. App stores the access token, sends it as `Authorization: Bearer <token>`
-   on every request after that.
-3. `GET /user/profile` looks up the row by the ID inside that token
-   and returns everything needed to personalize the Home screen.
+## 📊 Endpoint Status
 
-## Setup
+| Module | Route Prefix | Status | Description |
+|---|---|:---:|---|
+| **Health** | `GET /health`, `GET /api/health` | **Active** | Server heartbeat and status verification |
+| **Authentication** | `POST /api/v1/auth/*` | **Active** | Token verification via Firebase Admin SDK |
+| **User Profile & Settings** | `GET/PUT /api/v1/user/profile`, `PUT /api/v1/user/settings`, `DELETE /api/v1/user/account` | **Active** | Profile, class, weak subjects, study goals, UI preferences |
+| **Marksheet OCR** | `POST /api/v1/students/me/marksheet/extract`, `POST /api/v1/students/me/marksheet/save` | **Active** | OCR parsing of uploaded grade cards & validation |
+| **Study Material** | `/api/v1/subjects`, `/api/v1/chapters/*` | *Stub (501)* | Subject chapters, topics, curriculum content |
+| **Progress & Analytics** | `/api/v1/progress/*` | *Stub (501)* | Weekly study trends, session logs, weak areas |
+| **Career Guidance** | `/api/v1/careers/*` | *Stub (501)* | Roadmaps, skills, entrance exams, career quiz |
+| **Notifications** | `/api/v1/notifications/*` | *Stub (501)* | Push notification device registration & preferences |
+| **AI Mentor (Buddy)** | `/api/v1/chat/*` | *In Progress* | Pinecone RAG implemented; conversational agent graph pending |
 
-```bash
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
+---
 
-Edit `.env`:
-- `DATABASE_URL` — already filled in with your Supabase project's
-  pooler host (`aws-1-ap-south-1.pooler.supabase.com`). Replace
-  `[YOUR-PASSWORD]` with your actual database password (the one you
-  set when creating the Supabase project, not your Supabase account
-  password).
-- `JWT_SECRET_KEY` — generate one with:
+## 🛠 System Dependencies
+
+### 1. Tesseract OCR Engine
+The marksheet extraction engine requires the Tesseract binary:
+- **Windows**: Install via `winget install UB-Mannheim.TesseractOCR` or download the installer from [UB-Mannheim](https://github.com/UB-Mannheim/tesseract/wiki). Default lookup is `C:\Program Files\Tesseract-OCR\tesseract.exe`.
+- **Ubuntu/Debian**:
   ```bash
-  python3 -c "import secrets; print(secrets.token_hex(32))"
+  sudo apt-get update && sudo apt-get install -y tesseract-ocr
+  ```
+- **macOS**:
+  ```bash
+  brew install tesseract
   ```
 
-If `DATABASE_URL` is ever unreachable (project paused, wrong
-password, no internet), `app/db/database.py` automatically falls back
-to a local `sql_app.db` SQLite file — so the app still runs for local
-development even if Supabase is temporarily unavailable. You'll see a
-warning printed when that happens.
+---
 
-### Create the tables and try it
+## ⚙️ Environment Configuration
+
+Create a `.env` file in the `learn_buddy_backend` root directory:
+
+```ini
+# Application
+PROJECT_NAME="Learn Buddy API"
+API_V1_STR="/api/v1"
+
+# Database (Supabase PostgreSQL)
+DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
+
+# Supabase Storage (Optional for file & avatar hosting)
+SUPABASE_URL="https://[PROJECT_REF].supabase.co"
+SUPABASE_KEY="your-supabase-service-role-key"
+SUPABASE_BUCKET="avatars"
+
+# Firebase Admin SDK (Path to service account JSON)
+FIREBASE_CREDENTIALS_PATH="./firebase-service-account.json"
+
+# Pinecone Vector DB (RAG Service)
+PINECONE_API_KEY="your-pinecone-api-key"
+PINECONE_INDEX_NAME="learn-buddy"
+
+# OCR Configuration (Optional override)
+# TESSERACT_CMD="C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+```
+
+> **Note on Firebase**: Download your project's service account private key from **Firebase Console -> Project Settings -> Service Accounts**, rename it to `firebase-service-account.json`, and place it in the `learn_buddy_backend` folder.
+
+---
+
+## 📦 Installation & Setup
 
 ```bash
-python check_db.py     # confirms Supabase is reachable
-python seed_data.py    # optional — adds demo@learnbuddy.app for quick testing
-uvicorn app.main:app --reload
+# 1. Navigate to backend directory
+cd learn_buddy_backend
+
+# 2. Set up virtual environment
+python -m venv venv
+
+# Windows
+.\venv\Scripts\activate
+# Linux / macOS
+source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Verify Database connectivity
+python check_db.py
+
+# 5. Run ad-hoc schema migration (if altering existing tables)
+python migrate_db.py
+
+# 6. Start the API server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Tables are also created automatically on every app startup
-(`Base.metadata.create_all` in `main.py`), so you don't strictly need
-a separate migration step to get started. Use `migrate_db.py` later,
-when you need to ALTER an existing table (add/rename a column) rather
-than just create a new one.
+Once running, access:
+- **Swagger Documentation**: `http://localhost:8000/docs`
+- **ReDoc Documentation**: `http://localhost:8000/redoc`
 
-Visit `http://localhost:8000/docs`. Try `POST /auth/login` with
-`demo@learnbuddy.app` / `password123`, copy the `access_token`, click
-"Authorize", paste it in, then call `GET /user/profile` — you'll get
-that exact demo student back.
+---
 
-### Google Sign-In (optional for now)
-
-`/auth/google` needs a Firebase service account JSON. Download one
-from Firebase Console -> Project Settings -> Service Accounts, save it
-as `firebase-service-account.json` in the project root, and point
-`FIREBASE_CREDENTIALS_PATH` at it. Until you do this, every other
-endpoint still works fine — the app just logs a warning on startup.
-
-### Supabase Storage (optional for now)
-
-`app/services/supabase_storage.py` is ready for avatar/content
-uploads whenever you need them — set `SUPABASE_KEY` in `.env` to your
-project's `service_role` key (Project Settings -> API) to enable it.
-
-### Marksheet OCR Extraction
-
-The marksheet extraction flow (`POST /students/me/marksheet/extract`) uses Tesseract OCR and OpenCV instead of a vision LLM. This avoids per-request API costs, but note that this approach is less forgiving than an LLM. It relies on exact text parsing, so reviewing the parsed subjects/marks before saving matters more.
-
-**System Dependencies (Not installable via pip)**:
-- **Ubuntu/Debian**: `sudo apt-get install tesseract-ocr`
-- **macOS**: `brew install tesseract`
-
-
-## Project layout
+## 📂 Project Architecture
 
 ```
-app/
-  core/
-    config.py          plain Settings class, reads from .env
-    security.py         (kept empty — hashing/JWT live in api/auth.py)
-  constants/
-    app_constants.py    shared fixed values (valid classes, buddy tones, ...)
-  db/
-    database.py         engine + SQLite fallback, SessionLocal, Base, get_db
-    base.py              (kept empty, matching your other project)
-  models/
-    user.py              User + RefreshToken
-  schemas/
-    auth.py, user.py     Pydantic request/response models
-  dependencies/
-    auth_deps.py         get_current_user, get_current_user_optional
-  middleware/
-    logging.py            logs every request's method/path/status/duration
-    error_handler.py      turns unhandled exceptions into clean JSON
-  api/
-    auth.py               built — register/login/google/phone-otp/refresh/logout
-    users.py               built — profile/settings
-    _not_yet_built.py       stubs for every other module
-  services/
-    otp_service.py          phone OTP (in-memory — swap for Redis + real SMS before prod)
-    google_auth_service.py  Firebase ID token verification
-    supabase_storage.py     file uploads (avatars etc.) — optional, disabled until SUPABASE_KEY is set
-    ai/                      empty on purpose, see README.md inside
-check_db.py          verify Supabase connectivity
-migrate_db.py        create tables + a place to add ALTER TABLE patches
-seed_data.py         seed one demo user for local testing
+learn_buddy_backend/
+├── app/
+│   ├── api/
+│   │   ├── auth.py              # Firebase authentication hooks
+│   │   ├── users.py             # Profile and user settings endpoints
+│   │   ├── students.py          # Marksheet upload and OCR processing
+│   │   └── _not_yet_built.py    # 501 stubs exposing full API surface in /docs
+│   ├── constants/
+│   │   └── app_constants.py     # Class definitions, tone lists, validation limits
+│   ├── core/
+│   │   └── config.py            # Pydantic/Environment configuration
+│   ├── db/
+│   │   └── database.py          # SQLAlchemy engine with SQLite auto-fallback
+│   ├── dependencies/
+│   │   └── auth_deps.py         # Bearer token decoding & user retrieval
+│   ├── middleware/
+│   │   ├── logging.py           # Request path, latency, and status logger
+│   │   └── error_handler.py     # Global exception-to-JSON formatters
+│   ├── models/
+│   │   └── user.py              # User SQLAlchemy model
+│   ├── schemas/
+│   │   └── user.py              # Pydantic schemas (UserOut, UserProfileUpdate)
+│   └── services/
+│       ├── ocr_service.py       # Tesseract OCR & PyMuPDF marksheet parser
+│       ├── supabase_storage.py  # Supabase cloud storage wrapper
+│       └── ai/
+│           ├── rag_service.py   # Pinecone RAG index search
+│           └── README.md        # AI services roadmap
+├── check_db.py                  # Database connection verification tool
+├── migrate_db.py                # Safe DDL migration tool
+├── seed_data.py                 # Local test data seeder
+└── requirements.txt             # Project dependencies
 ```
 
-## Building the next module
+---
 
-Follow the same pattern as `auth.py`/`users.py`:
-1. Add a SQLAlchemy model in `app/models/`, add it to `app/models/__init__.py`.
-2. Add Pydantic schemas in `app/schemas/`.
-3. Write the real endpoints in `app/api/<module>.py`.
-4. Import and `include_router(...)` it in `app/main.py` (same pattern
-   as `auth_router`/`users_router`).
-5. Delete that module's block from `_not_yet_built.py`.
-6. Restart the app — `create_all` picks up the new table automatically.
+## 🧠 Marksheet OCR Workflow
 
-Suggested order (matches dependency order, not just the SOW list):
-**Study Material -> Progress -> Career Guidance -> Notifications -> AI Mentor**
-(Progress and AI both need Study Material's chapter IDs to exist first.)
+The endpoint `POST /api/v1/students/me/marksheet/extract` performs:
+1. **File Parsing**: Converts incoming PDF pages to images using PyMuPDF (`fitz`), or reads direct image formats (`.jpg`, `.png`).
+2. **Image Preprocessing**: Converts to grayscale, applies bilateral filtering, and uses adaptive thresholding for optimal character contrast.
+3. **OCR Extraction**: Runs Tesseract with layout analysis.
+4. **Data Normalization**:
+   - Parses student name, previous class (e.g. Class 9 for a Class 10 student), and percentage.
+   - Extracts subject names against `KNOWN_SUBJECTS` with fuzzy matching (`difflib`).
+   - Normalizes marks (obtained vs total).
+5. **Cross-Validation**: Compares extracted student name and class against the logged-in student's profile, generating warnings if discrepancies are found.
