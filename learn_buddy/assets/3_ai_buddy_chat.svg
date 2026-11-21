@@ -1,0 +1,40 @@
+<svg viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="blur3" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="30"/>
+    </filter>
+    <linearGradient id="buddyFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF8A72"/>
+      <stop offset="100%" stop-color="#FFA531"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="240" cy="240" r="150" fill="#FF6F59" opacity="0.28" filter="url(#blur3)"/>
+
+  <!-- sparkles -->
+  <circle cx="380" cy="330" r="5" fill="#4C9C90" opacity="0.7"/>
+  <path d="M96,340 l4,11 l11,4 l-11,4 l-4,11 l-4,-11 l-11,-4 l11,-4 Z" fill="#FFA531" opacity="0.7"/>
+
+  <!-- buddy speech bubble (left) -->
+  <g>
+    <path d="M70,150 h180 a24,24 0 0 1 24,24 v90 a24,24 0 0 1 -24,24 h-120 l-30,30 v-30 h-30 a24,24 0 0 1 -24,-24 v-90 a24,24 0 0 1 24,-24 Z"
+          fill="#FFF3DE" stroke="#FFA531" stroke-width="3"/>
+    <!-- buddy face inside -->
+    <circle cx="160" cy="222" r="34" fill="url(#buddyFace)"/>
+    <circle cx="148" cy="216" r="5" fill="#20262B"/>
+    <circle cx="172" cy="216" r="5" fill="#20262B"/>
+    <path d="M146,232 C152,240 168,240 174,232" stroke="#20262B" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- little antenna spark to signal "AI" -->
+    <circle cx="160" cy="180" r="5" fill="#FBF7EF" stroke="#FFA531" stroke-width="2"/>
+    <path d="M160,185 L160,192" stroke="#FFA531" stroke-width="3"/>
+  </g>
+
+  <!-- student's reply bubble (right, lower) -->
+  <g>
+    <path d="M230,280 h160 a20,20 0 0 1 20,20 v70 a20,20 0 0 1 -20,20 h-110 l-26,26 v-26 h-24 a20,20 0 0 1 -20,-20 v-70 a20,20 0 0 1 20,-20 Z"
+          fill="#FF6F59"/>
+    <path d="M262,318 h96" stroke="#FBF7EF" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+    <path d="M262,338 h64" stroke="#FBF7EF" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+    <path d="M262,358 h80" stroke="#FBF7EF" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+  </g>
+</svg>

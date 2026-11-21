@@ -1,0 +1,59 @@
+<svg viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="blur1" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="30"/>
+    </filter>
+    <linearGradient id="bookRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF8A72"/>
+      <stop offset="100%" stop-color="#FF6F59"/>
+    </linearGradient>
+    <linearGradient id="bookGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFBC5C"/>
+      <stop offset="100%" stop-color="#FFA531"/>
+    </linearGradient>
+    <linearGradient id="bookTeal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5FB3A6"/>
+      <stop offset="100%" stop-color="#3F8C82"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft glow -->
+  <circle cx="240" cy="230" r="150" fill="#FFA531" opacity="0.22" filter="url(#blur1)"/>
+
+  <!-- floating sparkles -->
+  <circle cx="108" cy="120" r="6" fill="#FFA531" opacity="0.6"/>
+  <circle cx="372" cy="150" r="4" fill="#FF6F59" opacity="0.6"/>
+  <path d="M362,300 l5,13 l13,5 l-13,5 l-5,13 l-5,-13 l-13,-5 l13,-5 Z" fill="#4C9C90" opacity="0.7"/>
+
+  <!-- desk / surface shadow -->
+  <ellipse cx="240" cy="372" rx="150" ry="18" fill="#20262B" opacity="0.08"/>
+
+  <!-- small potted plant -->
+  <g transform="translate(340,270)">
+    <path d="M0,60 C-4,40 -18,34 -14,14 C-6,26 6,26 14,14 C18,34 4,40 0,60 Z" fill="#4C9C90"/>
+    <rect x="-22" y="58" width="44" height="34" rx="10" fill="#FF6F59"/>
+  </g>
+
+  <!-- book stack, fanned -->
+  <g>
+    <!-- bottom book: teal -->
+    <rect x="120" y="300" width="220" height="34" rx="10" fill="url(#bookTeal)" transform="rotate(-2 240 317)"/>
+    <!-- middle book: marigold -->
+    <rect x="112" y="262" width="220" height="34" rx="10" fill="url(#bookGold)" transform="rotate(3 240 279)"/>
+    <!-- top book: coral -->
+    <rect x="122" y="224" width="210" height="34" rx="10" fill="url(#bookRed)" transform="rotate(-3 227 241)"/>
+
+    <!-- open book on top -->
+    <g transform="translate(140,150)">
+      <path d="M60,20 C40,8 10,4 0,10 L0,90 C10,84 40,88 60,100 Z" fill="#FBF7EF" stroke="#E3D9C4" stroke-width="2"/>
+      <path d="M60,20 C80,8 110,4 120,10 L120,90 C110,84 80,88 60,100 Z" fill="#FBF7EF" stroke="#E3D9C4" stroke-width="2"/>
+      <path d="M60,20 L60,100" stroke="#E3D9C4" stroke-width="2"/>
+      <path d="M14,32 C28,28 44,30 54,36" stroke="#C9BFA6" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M14,48 C28,44 44,46 54,52" stroke="#C9BFA6" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M14,64 C26,61 38,62 48,66" stroke="#C9BFA6" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M66,36 C76,30 92,28 106,32" stroke="#C9BFA6" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M66,52 C76,46 92,44 106,48" stroke="#C9BFA6" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M66,66 C74,62 86,61 100,64" stroke="#C9BFA6" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

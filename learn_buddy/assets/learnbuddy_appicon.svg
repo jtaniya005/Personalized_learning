@@ -1,0 +1,27 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="badgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6F59"/>
+      <stop offset="100%" stop-color="#FFA531"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App-icon background: warm notebook paper -->
+  <rect x="0" y="0" width="1024" height="1024" fill="#FBF7EF"/>
+
+  <!-- Soft marigold glow behind the badge -->
+  <rect x="132" y="223" width="760" height="760" rx="213" fill="#FFA531" opacity="0.35" />
+
+  <!-- Main badge — coral to marigold gradient, rounded square -->
+  <rect x="132" y="132" width="760" height="760" rx="213" fill="url(#badgeGradient)"/>
+
+  <!-- Open book icon, white, centered in badge -->
+  <path d="M506,362 C444,345 364,370 315,512 C364,590 444,640 506,662 Z" fill="#FFFFFF"/>
+  <path d="M518,362 C580,345 660,370 709,512 C660,590 580,640 518,662 Z" fill="#FFFFFF"/>
+
+  <!-- Spark badge — the "buddy" accent -->
+  <circle cx="812" cy="212" r="160" fill="#20262B" stroke="#FBF7EF" stroke-width="29"/>
+  <g transform="translate(766.1,167) scale(0.9)">
+    <path d="M58,6 L20,58 L46,58 L38,94 L82,42 L54,42 Z" fill="#FFA531"/>
+  </g>
+</svg>
