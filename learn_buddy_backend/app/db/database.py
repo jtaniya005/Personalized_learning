@@ -3,13 +3,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 # Attempt to connect to primary DATABASE_URL, fallback to SQLite if paused/unreachable
 try:
-    if settings.DATABASE_URL.startswith("sqlite"):
-        engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
+    if db_url.startswith("sqlite"):
+        engine = create_engine(db_url, connect_args={"check_same_thread": False})
     else:
-        connect_args = {"connect_timeout": 3} if "postgresql" in settings.DATABASE_URL else {}
-        engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+        connect_args = {"connect_timeout": 3} if "postgres" in db_url else {}
+        engine = create_engine(db_url, connect_args=connect_args)
         # Test DB connection
         with engine.connect() as conn:
             pass

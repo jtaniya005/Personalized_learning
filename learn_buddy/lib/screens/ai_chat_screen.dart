@@ -536,6 +536,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               // Mic Button for Direct Voice Query (POST /api/ask)
               GestureDetector(
                 onTap: _toggleMicRecording,
+                onLongPress: _openVoiceAssistantModal,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 48,

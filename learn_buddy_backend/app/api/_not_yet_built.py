@@ -95,24 +95,3 @@ def register_device():
 def update_notification_prefs():
     raise NOT_BUILT
 
-
-# --- AI Mentor (Buddy) — deliberately last. See app/services/ai/README.md ---
-@router.post("/chat/message")
-def send_message():
-    raise NOT_BUILT
-
-@router.get("/chat/history")
-def chat_history():
-    raise NOT_BUILT
-
-@router.get("/chat/daily-checkin")
-def daily_checkin():
-    raise NOT_BUILT
-
-@router.post("/chat/checkin-response")
-def checkin_response():
-    raise NOT_BUILT
-
-@router.put("/chat/language")
-def set_chat_language():
-    raise NOT_BUILT

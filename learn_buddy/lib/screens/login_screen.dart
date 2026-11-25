@@ -7,6 +7,8 @@ import '../widgets/app_logo.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'phone_otp_screen.dart';
+import 'student_details_screen.dart';
+import '../services/auth_service.dart';
 import '../widgets/focus_glow_wrapper.dart';
 import '../widgets/primary_glow_button.dart';
 import '../widgets/animated_scale_press.dart';
@@ -46,6 +48,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => isLoading = true);
+
+    // 1. First attempt Backend Direct Login (Local DB / JWT)
+    final backendRes = await AuthService.login(email: email, password: password);
+    if (backendRes['success'] == true) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        final user = backendRes['user'] as Map<String, dynamic>;
+        _routeAfterLogin(user);
+      }
+      return;
+    }
+
+    // 2. Fallback to Firebase Auth
     try {
       final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
@@ -54,22 +69,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         setState(() => isLoading = false);
-        _goHome();
+        final profile = await AuthService.getProfile();
+        _routeAfterLogin(profile ?? {'email': email, 'name': cred.user?.displayName ?? 'Student'});
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Login failed')),
+          SnackBar(content: Text(backendRes['message'] ?? e.message ?? 'Login failed')),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text(backendRes['message'] ?? 'Error: ${e.toString()}')),
         );
       }
+    }
+  }
+
+  void _routeAfterLogin(Map<String, dynamic> user) {
+    final marksheetData = user['marksheet_data'] as Map?;
+    final hasCompletedMarksheet = marksheetData != null && marksheetData.isNotEmpty;
+
+    if (!hasCompletedMarksheet) {
+      // Step 2 & 3: Details & Marksheet Screen
+      Navigator.of(context).pushReplacement(
+        FadeSlidePageRoute(
+          page: StudentDetailsScreen(initialUser: user),
+        ),
+      );
+    } else {
+      // Direct to Dashboard
+      Navigator.of(context).pushReplacement(
+        FadeSlidePageRoute(
+          page: HomeScreen(
+            studentClass: user['student_class'] as int? ?? 10,
+            studentName: user['name'] ?? 'Student',
+            avatarIndex: user['avatar_index'] as int? ?? 0,
+          ),
+        ),
+      );
     }
   }
 
@@ -82,8 +123,11 @@ class _LoginScreenState extends State<LoginScreen> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      if (mounted) _goHome();
+      final cred = await FirebaseAuth.instance.signInWithCredential(credential);
+      if (mounted) {
+        final profile = await AuthService.getProfile();
+        _routeAfterLogin(profile ?? {'email': cred.user?.email, 'name': cred.user?.displayName ?? 'Student'});
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,18 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     }
-  }
-
-  void _goHome() {
-    Navigator.of(context).pushReplacement(
-      FadeSlidePageRoute(
-        page: const HomeScreen(
-          studentClass: 10,
-          studentName: 'Student',
-          avatarIndex: 0,
-        ),
-      ),
-    );
   }
 
   @override

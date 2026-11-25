@@ -1,5 +1,10 @@
-import firebase_admin
-from firebase_admin import credentials
+try:
+    import firebase_admin
+    from firebase_admin import credentials
+    has_firebase = True
+except ImportError:
+    has_firebase = False
+    firebase_admin = None
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,8 +14,9 @@ from app.models.user import User
 
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
-from app.api._not_yet_built import router as stub_router
 from app.api.students import router as students_router
+from app.api.chat import router as chat_router
+from app.api._not_yet_built import router as stub_router
 
 from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.error_handler import register_error_handlers
@@ -23,11 +29,12 @@ Base.metadata.create_all(bind=engine)
 # Firebase Admin — used by /auth/google (ID token verification) and,
 # later, push notifications. Safe to skip in local dev if the file
 # doesn't exist yet; Google sign-in just won't work until it does.
-try:
-    cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
-except Exception:
-    print("[warn] Firebase not initialized — check FIREBASE_CREDENTIALS_PATH")
+if has_firebase and firebase_admin:
+    try:
+        cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+    except Exception:
+        print("[warn] Firebase not initialized — check FIREBASE_CREDENTIALS_PATH")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -48,6 +55,7 @@ register_error_handlers(app)
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(users_router, prefix=settings.API_V1_STR)
 app.include_router(students_router, prefix=settings.API_V1_STR)
+app.include_router(chat_router, prefix=settings.API_V1_STR)
 app.include_router(stub_router, prefix=settings.API_V1_STR)
 
 
@@ -55,3 +63,13 @@ app.include_router(stub_router, prefix=settings.API_V1_STR)
 @app.get("/api/health", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": settings.PROJECT_NAME}
+
+@app.post("/api/chat", tags=["Voice Assistant"])
+def legacy_chat_endpoint(payload: dict):
+    from app.api.chat import voice_chat_compat
+    return voice_chat_compat(payload)
+
+@app.post("/api/reset", tags=["Voice Assistant"])
+def legacy_reset_endpoint():
+    return {"ok": True, "message": "Session reset successfully"}
+

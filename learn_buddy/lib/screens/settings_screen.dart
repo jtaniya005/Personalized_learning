@@ -5,6 +5,7 @@ import '../widgets/notebook_card.dart';
 import '../widgets/custom_theme_switch.dart';
 import '../models/mock_data.dart';
 import 'auth_choice_screen.dart';
+import '../services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final int studentClass;
@@ -142,13 +143,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
+                      final updatedName = nameController.text.trim().isEmpty
+                          ? studentName
+                          : nameController.text.trim();
                       setState(() {
-                        studentName = nameController.text.trim().isEmpty
-                            ? studentName
-                            : nameController.text.trim();
+                        studentName = updatedName;
                         avatarIndex = tempAvatar;
                         studentClass = tempClass;
                       });
+                      AuthService.updateDetails(
+                        name: updatedName,
+                        avatarIndex: tempAvatar,
+                        studentClass: tempClass,
+                      );
                       Navigator.of(sheetContext).pop();
                     },
                     child: Text(tr(sheetContext, 'save')),
@@ -179,12 +186,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(color: AppColors.inkSoft)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(dialogContext).pop();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const AuthChoiceScreen()),
-                (route) => false,
-              );
+              await AuthService.logout();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthChoiceScreen()),
+                  (route) => false,
+                );
+              }
             },
             child: const Text('Log out', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
           ),

@@ -314,55 +314,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => isLoading = true);
 
+    // 1. Direct Backend Registration (Creates unique user ID in DB)
+    final backendRes = await AuthService.register(
+      name: name,
+      email: email,
+      password: password,
+      studentClass: selectedClass,
+      stream: selectedStream,
+      subjects: _allAvailableSubjects,
+    );
+
+    // 2. Also try Firebase Registration if available
     try {
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       await cred.user?.updateDisplayName(name);
+    } catch (_) {}
 
+    if (backendRes['success'] == true) {
       if (mounted) {
         setState(() {
           isLoading = false;
           _accountDetailsValidated = true;
         });
       }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        try {
-          final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
-          await cred.user?.updateDisplayName(name);
-          if (mounted) {
-            setState(() {
-              isLoading = false;
-              _accountDetailsValidated = true;
-            });
-          }
-        } catch (loginError) {
-          if (mounted) {
-            setState(() => isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Account exists, but password incorrect. Please login instead.')),
-            );
-          }
+    } else {
+      // If user already exists in DB, attempt login
+      final loginRes = await AuthService.login(email: email, password: password);
+      if (loginRes['success'] == true) {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+            _accountDetailsValidated = true;
+          });
         }
       } else {
         if (mounted) {
           setState(() => isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message ?? 'Registration failed')),
+            SnackBar(content: Text(backendRes['message'] ?? 'Registration failed')),
           );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
       }
     }
   }
@@ -371,46 +365,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => isLoading = true);
 
-    final result = await AuthService.updateProfile(
+    // Save student profile details
+    await AuthService.updateDetails(
+      name: nameController.text.trim(),
       studentClass: selectedClass,
-      avatarIndex: selectedAvatar,
-      weakSubjects: selectedWeakSubjects.toList(),
-      dailyGoalMinutes: goalMinutes,
       stream: selectedStream,
+      subjects: _allAvailableSubjects,
+      avatarIndex: selectedAvatar,
+      dailyGoalMinutes: goalMinutes,
     );
+
+    // Format and save marksheet data for 6-Tier Categorization & Study Plan
+    final validMarks = <Map<String, dynamic>>[];
+    for (final m in previousTestMarks) {
+      final obt = double.tryParse(m['obtained'].toString().trim());
+      final tot = double.tryParse(m['total'].toString().trim()) ?? 100.0;
+      if (obt != null && obt > 0) {
+        validMarks.add({
+          'subject': m['subject'],
+          'marks_obtained': obt,
+          'total_marks': tot,
+        });
+      }
+    }
+
+    if (validMarks.isNotEmpty) {
+      final pct = double.tryParse(percentageController.text.trim());
+      await AuthService.saveMarksheet({
+        'marks': validMarks,
+        'percentage': pct,
+      });
+    }
 
     if (mounted) {
       setState(() => isLoading = false);
     }
 
-    if (result['success']) {
-      weakSubjectsNotifier.value = selectedWeakSubjects.toList();
-      dailyGoalMinutes.value = goalMinutes;
-      
-      final user = FirebaseAuth.instance.currentUser;
-      try {
-        await user?.sendEmailVerification();
-      } catch (e) {
-        debugPrint('Email verification failed to send: $e');
-      }
+    weakSubjectsNotifier.value = selectedWeakSubjects.toList();
+    dailyGoalMinutes.value = goalMinutes;
 
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          FadeSlidePageRoute(
-            page: HomeScreen(
-              studentClass: selectedClass,
-              studentName: nameController.text.trim(),
-              avatarIndex: selectedAvatar,
-            ),
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        FadeSlidePageRoute(
+          page: HomeScreen(
+            studentClass: selectedClass,
+            studentName: nameController.text.trim(),
+            avatarIndex: selectedAvatar,
           ),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
-      }
+        ),
+      );
     }
   }
 

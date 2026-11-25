@@ -22,21 +22,33 @@ class RAGService:
         
         self.api_key = settings.PINECONE_API_KEY or "pcsk_qzvqg_45k7FnGvmyPFV7NkHpXCHCFnuRixV1Vddtt7zFSNszwpMDQK7UB2n61LfYaD5LQ"
         self.index_name = settings.PINECONE_INDEX_NAME or "learn-buddy"
-        
-        print("RAGService: Connecting to Pinecone...")
-        self.pc = Pinecone(api_key=self.api_key)
-        self.index = self.pc.Index(self.index_name)
-        
-        print("RAGService: Loading local SentenceTransformer model (all-mpnet-base-v2)...")
-        self.model = SentenceTransformer('all-mpnet-base-v2')
+        self.pc = None
+        self.index = None
+        self.model = None
+
+        try:
+            print("RAGService: Connecting to Pinecone...")
+            self.pc = Pinecone(api_key=self.api_key)
+            self.index = self.pc.Index(self.index_name)
+        except Exception as e:
+            print(f"[warn] RAGService Pinecone init skipped/failed: {e}")
+
+        try:
+            print("RAGService: Loading local SentenceTransformer model (all-mpnet-base-v2)...")
+            self.model = SentenceTransformer('all-mpnet-base-v2')
+        except Exception as e:
+            print(f"[warn] RAGService SentenceTransformer loading skipped/failed: {e}")
+
         self._initialized = True
-        print("RAGService: Initialized successfully!")
+        print("RAGService: Ready!")
 
     def query_namespace(self, query: str, namespace: str, top_k: int = 3) -> list[dict]:
         """
         Embeds the query and searches inside the specified Pinecone namespace.
         Available namespaces: 'careers', 'colleges', 'syllabus', 'faqs', 'conversations'
         """
+        if not self.index or not self.model:
+            return []
         try:
             # Generate embedding
             query_vector = self.model.encode(query).tolist()

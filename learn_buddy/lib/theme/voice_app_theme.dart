@@ -80,7 +80,7 @@ class VoiceAppTheme {
         centerTitle: false,
         iconTheme: IconThemeData(color: VoiceAppColors.textPrimary),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: VoiceAppColors.bgCard.withOpacity(0.5),
         elevation: 0,
         shape: RoundedRectangleBorder(

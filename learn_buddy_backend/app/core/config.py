@@ -8,8 +8,8 @@ class Settings:
     PROJECT_NAME: str = "Learn Buddy API"
     API_V1_STR: str = "/api/v1"
 
-    # Database (Supabase Postgres)
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
+    # Database (Defaults to local SQLite for development, or Supabase Postgres via .env)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
 
     # Supabase credentials (for storage — avatars, future content uploads)
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")

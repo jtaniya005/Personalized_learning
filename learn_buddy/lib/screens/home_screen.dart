@@ -15,6 +15,7 @@ import 'settings_screen.dart';
 import 'voice_assistant_screen.dart';
 import 'games/brain_break_menu.dart';
 import '../widgets/page_transitions.dart';
+import 'student_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int studentClass;
@@ -176,6 +177,10 @@ class _HomeBodyState extends State<_HomeBody> {
   List<SubjectInfo> _subjects = [];
   int _streakDays = 0;
   bool _isLoading = true;
+  String? _performanceCategory;
+  Map<String, dynamic>? _studyPlan;
+  List<dynamic> _careerRecs = [];
+  Map<String, dynamic>? _profile;
 
   @override
   void initState() {
@@ -195,12 +200,16 @@ class _HomeBodyState extends State<_HomeBody> {
       final streakDays = profile['streak_days'] as int? ?? 0;
 
       setState(() {
+        _profile = profile;
         _subjects = buildSubjectList(
           studentClass: studentClass,
           stream: stream,
           weakSubjects: weakSubjects,
         );
         _streakDays = streakDays;
+        _performanceCategory = profile['performance_category'] as String?;
+        _studyPlan = profile['study_plan'] as Map<String, dynamic>?;
+        _careerRecs = (profile['career_recommendations'] as List?) ?? [];
         _isLoading = false;
       });
     } else if (mounted) {
@@ -402,6 +411,63 @@ class _HomeBodyState extends State<_HomeBody> {
                     ),
                   ),
                   Icon(Icons.arrow_forward_rounded, color: AppColors.paper),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Personalized Tier & Marksheet Plan ──
+          FadeSlideIn(
+            index: 4,
+            child: NotebookCard(
+              background: _performanceCategory != null
+                  ? (_performanceCategory == 'top'
+                      ? const Color(0xFFE8F5E9)
+                      : (_performanceCategory == 'strong'
+                          ? const Color(0xFFE3F2FD)
+                          : const Color(0xFFFFF3E0)))
+                  : AppColors.paperCard,
+              holeCount: 4,
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => StudentDetailsScreen(initialUser: _profile),
+                  ),
+                );
+                _loadProfile();
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.marigold,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('AI Learning Plan',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black)),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _performanceCategory != null
+                        ? 'Your Tier: ${_performanceCategory!.toUpperCase()} · Personalized Roadmap Active'
+                        : 'Upload Marksheet to Unlock Your AI Plan 📄',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _studyPlan?['strategy'] ??
+                        'Scan your 10th/12th marksheet to identify weak subjects, get a tailored study timetable & career guidance grounded by Pinecone.',
+                    style: TextStyle(fontSize: 12, color: AppColors.inkSoft),
+                  ),
                 ],
               ),
             ),

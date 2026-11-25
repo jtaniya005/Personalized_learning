@@ -1,6 +1,8 @@
 import re
 import difflib
-import fitz  # pymupdf
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="fitz")
+import pymupdf as fitz
 import cv2
 import numpy as np
 import pytesseract
