@@ -10,10 +10,15 @@ class AuthService {
   static String? _cachedToken;
   static Map<String, dynamic>? _cachedUser;
 
+  static String _activePort = '8001';
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8000/api/v1';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000/api/v1';
-    return 'http://127.0.0.1:8000/api/v1';
+    if (kIsWeb) return 'http://localhost:$_activePort/api/v1';
+    if (Platform.isAndroid) return 'http://10.0.2.2:$_activePort/api/v1';
+    return 'http://127.0.0.1:$_activePort/api/v1';
+  }
+
+  static void setActivePort(String port) {
+    _activePort = port;
   }
 
   static Map<String, dynamic>? get currentUser => _cachedUser;

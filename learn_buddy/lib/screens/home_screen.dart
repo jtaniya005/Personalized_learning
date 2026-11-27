@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../theme/app_theme.dart';
 import '../state/app_settings.dart';
-import '../widgets/notebook_card.dart';
-import '../widgets/fade_slide_in.dart';
-import '../widgets/paper_texture.dart';
+import '../widgets/theme_decorations.dart';
+import '../widgets/app_logo.dart';
 import '../models/subject_utils.dart';
-import '../models/mock_data.dart';
 import '../services/auth_service.dart';
 import 'study_material_screen.dart';
 import 'ai_chat_screen.dart';
@@ -16,6 +16,8 @@ import 'voice_assistant_screen.dart';
 import 'games/brain_break_menu.dart';
 import '../widgets/page_transitions.dart';
 import 'student_details_screen.dart';
+import '../widgets/voice_assistant_modal.dart';
+import '../services/voice_assistant_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final int studentClass;
@@ -25,7 +27,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.studentClass,
-    this.studentName = 'Student',
+    this.studentName = 'Rahul',
     this.avatarIndex = 0,
   });
 
@@ -60,112 +62,189 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final navItems = [
-      (icon: Icons.home_rounded, label: tr(context, 'nav_home')),
-      (icon: Icons.menu_book_rounded, label: tr(context, 'nav_study')),
-      (icon: Icons.chat_bubble_rounded, label: tr(context, 'nav_buddy')),
-      (icon: Icons.insights_rounded, label: tr(context, 'nav_progress')),
-    ];
-
     final pages = [
       _HomeBody(
         studentClass: studentClass,
         studentName: studentName,
-        avatarIndex: avatarIndex,
-        onOpenChat: () => setState(() => navIndex = 2),
+        onSelectTab: (idx) => setState(() => navIndex = idx),
         onOpenSettings: _openSettings,
       ),
       const StudyMaterialScreen(),
       const AiChatScreen(),
-      const ProgressScreen(),
+      const BrainBreakMenu(),
+      SettingsScreen(
+        studentClass: studentClass,
+        studentName: studentName,
+        avatarIndex: avatarIndex,
+      ),
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFFFDF9),
       body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 260),
-          switchInCurve: Curves.easeOut,
-          transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
-            child: child,
-          ),
-          child: KeyedSubtree(key: ValueKey(navIndex), child: pages[navIndex]),
+        child: Stack(
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              child: KeyedSubtree(
+                key: ValueKey(navIndex),
+                child: pages[navIndex],
+              ),
+            ),
+            // Floating Chatbot Button (active on all tabs except Doubts chat)
+            if (navIndex != 2)
+              Positioned(
+                bottom: 14,
+                right: 16,
+                child: _buildFloatingChatbot(),
+              ),
+          ],
         ),
       ),
-      bottomNavigationBar: Container(
+      bottomNavigationBar: _buildFloatingBottomBar(),
+    );
+  }
+
+  // ── Floating Chatbot Assistant Pill (Floats across screens) ──
+  Widget _buildFloatingChatbot() {
+    return GestureDetector(
+      onTap: () => setState(() => navIndex = 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.paper,
-          border: Border(top: BorderSide(color: AppColors.rule)),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFEA580C).withOpacity(0.38),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final itemWidth = constraints.maxWidth / navItems.length;
-            return Stack(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(Icons.smart_toy_outlined, size: 18, color: Color(0xFFEA580C)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 260),
-                  curve: Curves.easeOutCubic,
-                  left: itemWidth * navIndex + itemWidth * 0.12,
-                  top: 0,
-                  child: Container(
-                    width: itemWidth * 0.76,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.marigold.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                Text(
+                  'Ask Buddy',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(navItems.length, (i) {
-                    final item = navItems[i];
-                    return _NavItem(
-                      icon: item.icon,
-                      label: item.label,
-                      active: navIndex == i,
-                      onTap: () => setState(() => navIndex = i),
-                    );
-                  }),
+                Text(
+                  'Doubt & Career ✨',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withOpacity(0.92),
+                  ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Floating Dark Bottom Navigation Bar (Screen 8) ──
+  Widget _buildFloatingBottomBar() {
+    final navItems = [
+      (icon: Icons.home_rounded, label: 'Home'),
+      (icon: Icons.calendar_today_rounded, label: 'Plan'),
+      (icon: Icons.chat_bubble_outline_rounded, label: 'Doubts'),
+      (icon: Icons.sports_esports_outlined, label: 'Games'),
+      (icon: Icons.person_outline_rounded, label: 'Profile'),
+    ];
+
+    return Container(
+      color: const Color(0xFFFFFDF9),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1B18),
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(navItems.length, (i) {
+            final item = navItems[i];
+            final isActive = navIndex == i;
+            return GestureDetector(
+              onTap: () => setState(() => navIndex = i),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      item.icon,
+                      size: 22,
+                      color: isActive ? const Color(0xFFEA580C) : const Color(0xFFA8A29E),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        color: isActive ? const Color(0xFFEA580C) : const Color(0xFFA8A29E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
-          },
+          }),
         ),
       ),
     );
   }
 }
 
-String _greetingKey() {
-  final hour = DateTime.now().hour;
-  if (hour < 5) return 'greet_late';
-  if (hour < 12) return 'greet_morning';
-  if (hour < 17) return 'greet_afternoon';
-  if (hour < 20) return 'greet_evening';
-  return 'greet_night';
-}
-
-const List<String> _quotes = [
-  "Small steps every day beat cramming every time. 🌱",
-  "You don't have to be perfect, just consistent. ✨",
-  "Future you is already proud of today's effort. 💪",
-  "Progress, not perfection — one chapter at a time. 📖",
-];
-
+// ══════════════════════════════════════════════════════════════
+// SCREEN 8: Home Body
+// ══════════════════════════════════════════════════════════════
 class _HomeBody extends StatefulWidget {
   final int studentClass;
   final String studentName;
-  final int avatarIndex;
-  final VoidCallback onOpenChat;
+  final ValueChanged<int> onSelectTab;
   final VoidCallback onOpenSettings;
 
   const _HomeBody({
     required this.studentClass,
     required this.studentName,
-    required this.avatarIndex,
-    required this.onOpenChat,
+    required this.onSelectTab,
     required this.onOpenSettings,
   });
 
@@ -174,13 +253,11 @@ class _HomeBody extends StatefulWidget {
 }
 
 class _HomeBodyState extends State<_HomeBody> {
-  List<SubjectInfo> _subjects = [];
-  int _streakDays = 0;
-  bool _isLoading = true;
+  Map<String, dynamic>? _profile;
   String? _performanceCategory;
   Map<String, dynamic>? _studyPlan;
   List<dynamic> _careerRecs = [];
-  Map<String, dynamic>? _profile;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -191,599 +268,366 @@ class _HomeBodyState extends State<_HomeBody> {
   Future<void> _loadProfile() async {
     final profile = await AuthService.getProfile();
     if (profile != null && mounted) {
-      final studentClass = profile['student_class'] as int? ?? widget.studentClass;
-      final stream = profile['stream'] as String?;
-      final weakSubjects = (profile['weak_subjects'] as List?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [];
-      final streakDays = profile['streak_days'] as int? ?? 0;
-
       setState(() {
         _profile = profile;
-        _subjects = buildSubjectList(
-          studentClass: studentClass,
-          stream: stream,
-          weakSubjects: weakSubjects,
-        );
-        _streakDays = streakDays;
         _performanceCategory = profile['performance_category'] as String?;
         _studyPlan = profile['study_plan'] as Map<String, dynamic>?;
         _careerRecs = (profile['career_recommendations'] as List?) ?? [];
         _isLoading = false;
       });
     } else if (mounted) {
-      // Offline fallback — derive from widget params with no weak subjects
-      setState(() {
-        _subjects = buildSubjectList(
-          studentClass: widget.studentClass,
-          stream: null,
-          weakSubjects: [],
-        );
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final avatar = avatarOptions[widget.avatarIndex % avatarOptions.length];
-    final quote = _quotes[DateTime.now().day % _quotes.length];
-
-    return PaperTexture(
-      child: RefreshIndicator(
-        color: AppColors.marigold,
-        onRefresh: () async {
-          await _loadProfile();
-        },
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+  void _showCareerGuidanceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFFFFFDF9),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Top bar: voice assistant & settings ──
-            FadeSlideIn(
-              index: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => VoiceAssistantScreen.withNewController(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF06B6D4)],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withOpacity(0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.graphic_eq_rounded, size: 16, color: Colors.white),
-                          SizedBox(width: 5),
-                          Text(
-                            'Voice AI',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: widget.onOpenSettings,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.paperCard,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.rule),
-                      ),
-                      child: Icon(Icons.settings_outlined,
-                          size: 18, color: AppColors.inkSoft),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 4),
-
-          // ── Greeting with avatar ──
-          FadeSlideIn(
-            index: 1,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: avatar.gradient),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: avatar.gradient.first.withOpacity(0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(avatar.icon, color: Colors.white, size: 26),
+                Text(
+                  'Career Recommendations',
+                  style: GoogleFonts.fraunces(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${tr(context, _greetingKey())}, ${widget.studentName}! 👋',
-                          style: Theme.of(context).textTheme.headlineMedium),
-                      const SizedBox(height: 2),
-                      Text('${tr(context, 'class_label')} ${widget.studentClass} · ${tr(context, 'board_exam_mode')}',
-                          style: Theme.of(context).textTheme.bodyMedium),
-                    ],
-                  ),
-                ),
-                _StreakBadge(days: _streakDays),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
               ],
             ),
-          ),
-          const SizedBox(height: 18),
-
-          // ── Quote of the day ──
-          FadeSlideIn(
-            index: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.teal.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                quote,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: AppColors.ink, fontWeight: FontWeight.w600),
-              ),
+            const SizedBox(height: 12),
+            Text(
+              'Grounded with AI & Pinecone based on your subject performance and stream:',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13, color: const Color(0xFF6B655B)),
             ),
-          ),
-          const SizedBox(height: 22),
-
-          // ── Buddy nudge ──
-          // TODO: wire to /chat/daily-checkin when built
-          FadeSlideIn(
-            index: 3,
-            child: NotebookCard(
-              background: AppColors.ink,
-              holeCount: 4,
-              onTap: widget.onOpenChat,
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.marigold, AppColors.coral],
-                      ),
-                      shape: BoxShape.circle,
+            const SizedBox(height: 16),
+            if (_careerRecs.isNotEmpty)
+              ..._careerRecs.take(4).map((car) => Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE8DECF)),
                     ),
-                    alignment: Alignment.center,
-                    child: Icon(Icons.face_retouching_natural_rounded, color: AppColors.paper, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(tr(context, 'nudge_title'),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
-                                ?.copyWith(color: AppColors.paper)),
-                        const SizedBox(height: 2),
-                        Text(tr(context, 'nudge_sub'),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                    color: AppColors.paper.withOpacity(0.7))),
+                        Text(car['title'] ?? '', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 4),
+                        Text(car['description'] ?? '', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF524C42))),
                       ],
                     ),
-                  ),
-                  Icon(Icons.arrow_forward_rounded, color: AppColors.paper),
-                ],
+                  ))
+            else
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8ED),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('• Engineering & Technology (B.Tech / AI / Software)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('• Data Science & Analytics', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('• Design & Product Management', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // ── Personalized Tier & Marksheet Plan ──
-          FadeSlideIn(
-            index: 4,
-            child: NotebookCard(
-              background: _performanceCategory != null
-                  ? (_performanceCategory == 'top'
-                      ? const Color(0xFFE8F5E9)
-                      : (_performanceCategory == 'strong'
-                          ? const Color(0xFFE3F2FD)
-                          : const Color(0xFFFFF3E0)))
-                  : AppColors.paperCard,
-              holeCount: 4,
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => StudentDetailsScreen(initialUser: _profile),
-                  ),
-                );
-                _loadProfile();
-              },
+  void _showFocusAreasModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFFFFFDF9),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Focus Priority Areas', style: GoogleFonts.fraunces(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              'Subjects scoring below 60% are flagged by our 6-Tier categorization engine for high-priority revision:',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13, color: const Color(0xFF6B655B)),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.marigold,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text('AI Learning Plan',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black)),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
+                      const SizedBox(width: 8),
+                      Text('Biology (45%) · Weak Tier (<50%)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: const Color(0xFFB91C1C))),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _performanceCategory != null
-                        ? 'Your Tier: ${_performanceCategory!.toUpperCase()} · Personalized Roadmap Active'
-                        : 'Upload Marksheet to Unlock Your AI Plan 📄',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  const SizedBox(height: 6),
+                  Text('Recommendation: Fundamental concept review, daily 30-min diagram practice.', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF7F1D1D))),
+                  const Divider(height: 16, color: Color(0xFFFECACA)),
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 20),
+                      const SizedBox(width: 8),
+                      Text('English (58%) · Needs Improve Tier (50-60%)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: const Color(0xFFB45309))),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _studyPlan?['strategy'] ??
-                        'Scan your 10th/12th marksheet to identify weak subjects, get a tailored study timetable & career guidance grounded by Pinecone.',
-                    style: TextStyle(fontSize: 12, color: AppColors.inkSoft),
-                  ),
+                  const SizedBox(height: 6),
+                  Text('Recommendation: Weekly 2 comprehension passages and grammar exercises.', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF78350F))),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Brain Break ──
-          FadeSlideIn(
-            index: 4,
-            child: NotebookCard(
-              holeCount: 3,
-              onTap: () {
-                Navigator.of(context).push(BrainBreakMenu.route());
-              },
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.marigold.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(Icons.videogame_asset_rounded, color: AppColors.marigoldDeep, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Brain Break',
-                            style: Theme.of(context).textTheme.bodyLarge),
-                        const SizedBox(height: 2),
-                        Text('Take a quick mini-game breather',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: AppColors.inkSoft)),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.videogame_asset_rounded, color: AppColors.inkSoft),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 30),
-
-          FadeSlideIn(
-            index: 5,
-            child: Row(
-              children: [
-                Text(tr(context, 'todays_plan'), style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(width: 8),
-                // TODO: wire to /progress/summary when built
-                const _DailyProgressRing(progress: 0.0),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // ── Subject grid — real data from profile ──
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: CircularProgressIndicator(color: AppColors.marigold),
-              ),
-            )
-          else if (_subjects.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Center(
-                child: Text(
-                  'No subjects found for your class/stream.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            )
-          else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _subjects.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 14,
-                childAspectRatio: 1.0,
-              ),
-              itemBuilder: (context, i) {
-                final s = _subjects[i];
-                return FadeSlideIn(
-                  index: 6 + i,
-                  child: _SubjectCard(subject: s),
-                );
-              },
-            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
-}
-
-class _DailyProgressRing extends StatelessWidget {
-  final double progress;
-  const _DailyProgressRing({required this.progress});
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: progress),
-      duration: const Duration(milliseconds: 1200),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, _) => SizedBox(
-        width: 18,
-        height: 18,
-        child: CustomPaint(
-          painter: _RingPainter(value: value, color: AppColors.marigoldDeep, trackWidth: 2.5),
+    return Stack(
+      children: [
+        // Corner Marigold Flower Decoration (Screen 8)
+        const Positioned(
+          top: 36,
+          right: -10,
+          child: MarigoldFloralWidget(size: 85),
         ),
-      ),
-    );
-  }
-}
 
-/// Streak badge with a gentle pulse to draw the eye without being loud.
-class _StreakBadge extends StatefulWidget {
-  final int days;
-  const _StreakBadge({required this.days});
-
-  @override
-  State<_StreakBadge> createState() => _StreakBadgeState();
-}
-
-class _StreakBadgeState extends State<_StreakBadge>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController controller;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.marigold.withOpacity(0.22),
-              AppColors.coral.withOpacity(0.16),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
+        ListView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           children: [
-            AnimatedBuilder(
-              animation: controller,
-              builder: (context, child) {
-                final pulse = controller.value;
-                return Transform.scale(
-                  scale: 0.85 + 0.15 * pulse,
-                  child: Opacity(
-                    opacity: 0.6 + 0.4 * pulse,
-                    child: child,
-                  ),
-                );
-              },
-              child: const Icon(Icons.local_fire_department_rounded,
-                  size: 18, color: AppColors.marigoldDeep),
-            ),
-            const SizedBox(width: 4),
-            Text('${widget.days}',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800, color: AppColors.ink)),
-          ],
-      ),
-    );
-  }
-}
-
-/// A subject card with its own color identity: tinted background, a
-/// colored shadow, and a small animated progress ring in the corner.
-/// Shows a "Needs focus" badge for weak subjects.
-class _SubjectCard extends StatelessWidget {
-  final SubjectInfo subject;
-  const _SubjectCard({required this.subject});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-            subject.color.withOpacity(0.07), AppColors.paperCard),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: subject.color.withOpacity(0.22)),
-        boxShadow: [
-          BoxShadow(
-            color: subject.color.withOpacity(0.16),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      subject.color.withOpacity(0.9),
-                      subject.color.withOpacity(0.6),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(11),
-                  boxShadow: [
-                    BoxShadow(
-                      color: subject.color.withOpacity(0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+            // ── Top Bar: Menu, Learn Buddy Logo, Notification Bell ──
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.menu_rounded, size: 26, color: Color(0xFF1E1B18)),
+                  onPressed: widget.onOpenSettings,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.menu_book_rounded, color: Color(0xFFEA580C), size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Learn Buddy',
+                      style: GoogleFonts.fraunces(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E1B18),
+                      ),
                     ),
                   ],
                 ),
-                child: Icon(subject.icon, color: Colors.white, size: 19),
-              ),
-              const Spacer(),
-              _ProgressRing(progress: subject.progress, color: subject.color),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // ── Weak subject badge or generic subtitle (replaces the old empty Spacer gap) ──
-          if (subject.isWeak)
-            Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.coral.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.flag_rounded, size: 11, color: AppColors.coral),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Needs focus',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3,
-                      color: AppColors.coral,
+                // Notification Bell with Orange Dot
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.notifications_none_rounded, size: 24, color: Color(0xFF1E1B18)),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('All caught up! No new notifications.')),
+                        );
+                      },
                     ),
-                  ),
-                ],
+                    Positioned(
+                      top: 1,
+                      right: 1,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEA580C),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFFFFDF9), width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+
+            // ── Greeting Header: Hello, Rahul! 👋 ──
+            Text(
+              'Hello, ${widget.studentName}! 👋',
+              style: GoogleFonts.fraunces(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E1B18),
+                letterSpacing: -0.5,
               ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                'Ready to start',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.inkSoft,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Let's make your learning journey\nbetter together.",
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF6B655B),
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // ── Buddy Mascot Banner Card ──
+            GestureDetector(
+              onTap: () => widget.onSelectTab(2), // Doubts
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF9ED),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF59E0B).withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const BuddyMascotWidget(size: 78),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFE8DECF)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "I'm Buddy!",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E1B18),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Your study companion 🚀',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFEA580C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
+            const SizedBox(height: 16),
 
-          const Spacer(),
-
-          Text(subject.name,
-              style: Theme.of(context).textTheme.titleMedium,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: subject.progress),
-              duration: const Duration(milliseconds: 700),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, _) => Stack(
+            // ── "Your Learning Progress" Card ──
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1B18),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
                 children: [
-                  Container(height: 6, color: AppColors.rule),
-                  FractionallySizedBox(
-                    widthFactor: value,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Your Learning Progress',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        '78%',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFFBBF24),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [subject.color, AppColors.coral],
+                      height: 8,
+                      width: double.infinity,
+                      color: const Color(0xFF38332E),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 0.78,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFF59E0B), Color(0xFFEA580C)],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -791,123 +635,105 @@ class _SubjectCard extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 22),
+
+            // ── Quick Action Grid (6 Cards, 3 cols x 2 rows) ──
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.98,
+              children: [
+                _buildQuickActionCard(
+                  icon: Icons.menu_book_rounded,
+                  label: 'My Plan',
+                  iconColor: const Color(0xFFEA580C),
+                  onTap: () => widget.onSelectTab(1),
+                ),
+                _buildQuickActionCard(
+                  icon: Icons.bar_chart_rounded,
+                  label: 'My Progress',
+                  iconColor: const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ProgressScreen()),
+                    );
+                  },
+                ),
+                _buildQuickActionCard(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: 'Doubts',
+                  iconColor: const Color(0xFFEA580C),
+                  onTap: () => widget.onSelectTab(2),
+                ),
+                _buildQuickActionCard(
+                  icon: Icons.explore_outlined,
+                  label: 'Career Guide',
+                  iconColor: const Color(0xFFEA580C),
+                  onTap: _showCareerGuidanceModal,
+                ),
+                _buildQuickActionCard(
+                  icon: Icons.sports_esports_outlined,
+                  label: 'Brain Games',
+                  iconColor: const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.of(context).push(BrainBreakMenu.route());
+                  },
+                ),
+                _buildQuickActionCard(
+                  icon: Icons.track_changes_rounded,
+                  label: 'Focus Areas',
+                  iconColor: const Color(0xFFD97706),
+                  onTap: _showFocusAreasModal,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ],
     );
   }
-}
 
-/// Small animated percentage ring — sits top-right of each subject
-/// card, giving a second, more glanceable read on progress.
-class _ProgressRing extends StatelessWidget {
-  final double progress;
-  final Color color;
-  const _ProgressRing({required this.progress, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: progress),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, _) => SizedBox(
-        width: 34,
-        height: 34,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            CustomPaint(
-              size: const Size(34, 34),
-              painter: _RingPainter(value: value, color: color),
-            ),
-            Text(
-              '${(value * 100).round()}',
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                color: color,
-              ),
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String label,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE8DECF)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.025),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  final double value;
-  final Color color;
-  final double trackWidth;
-  _RingPainter({required this.value, required this.color, this.trackWidth = 3});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - (trackWidth / 2);
-    final track = Paint()
-      ..color = AppColors.rule
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = trackWidth
-      ..strokeCap = StrokeCap.round;
-    final fill = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = trackWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, track);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      2 * math.pi * value,
-      false,
-      fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.value != value || oldDelegate.color != color;
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _NavItem(
-      {required this.icon,
-      required this.label,
-      required this.active,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.marigoldDeep : AppColors.inkSoft;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 52,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: active ? 1.15 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutBack,
-                child: Icon(icon, color: color, size: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: iconColor),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF26231F),
               ),
-              const SizedBox(height: 3),
-              Text(label,
-                  style: TextStyle(
-                      color: color, fontSize: 11, fontWeight: FontWeight.w700)),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

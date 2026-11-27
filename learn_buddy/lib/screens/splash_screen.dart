@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/page_transitions.dart';
-import 'onboarding_screen.dart';
+import 'auth_choice_screen.dart';
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen>
         avatarIndex: 0
       );
     } else {
-      nextScreen = const OnboardingScreen();
+      nextScreen = const AuthChoiceScreen();
     }
     
     Navigator.of(context).pushReplacement(

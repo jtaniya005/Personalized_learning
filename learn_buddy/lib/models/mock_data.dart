@@ -29,14 +29,18 @@ class ChatMessage {
   final String? audioBase64;
   final String? ttsProvider;
   final bool isVoice;
+  final bool careerGrounded;
+  final DateTime timestamp;
 
-  const ChatMessage(
+  ChatMessage(
     this.text,
     this.isUser, {
     this.audioBase64,
     this.ttsProvider,
     this.isVoice = false,
-  });
+    this.careerGrounded = false,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 }
 
 class DayActivity {

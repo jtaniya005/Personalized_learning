@@ -1,9 +1,15 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 db_url = settings.DATABASE_URL
+
+# If explicitly set to local SQLite, or if pointing to the expired legacy Supabase tenant, use SQLite directly
+if os.getenv("USE_LOCAL_DB", "").lower() in ("true", "1") or "fxhklhfapzplvvafndqq" in db_url:
+    db_url = "sqlite:///./sql_app.db"
+
 if db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
@@ -17,9 +23,8 @@ try:
         # Test DB connection
         with engine.connect() as conn:
             pass
-except Exception as e:
-    print(f"\n[Warning]: Could not connect to primary DATABASE_URL ({e}).")
-    print("[Fallback]: Falling back to local SQLite database (sql_app.db) for development.\n")
+except Exception:
+    # Clean fallback to SQLite for local development
     engine = create_engine("sqlite:///./sql_app.db", connect_args={"check_same_thread": False})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

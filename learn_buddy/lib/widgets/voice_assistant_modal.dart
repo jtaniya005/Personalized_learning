@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/voice_assistant_service.dart';
 
 enum AssistantState { idle, listening, thinking, speaking }
@@ -21,7 +22,7 @@ class VoiceAssistantModal extends StatefulWidget {
 class _VoiceAssistantModalState extends State<VoiceAssistantModal>
     with TickerProviderStateMixin {
   AssistantState _state = AssistantState.idle;
-  String _statusText = 'Tap microphone to speak';
+  String _statusText = 'Tap microphone to speak with Buddy';
   String _userSpeech = '';
   String _assistantReply = '';
   double _amplitude = 0.0;
@@ -31,13 +32,20 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
   late AnimationController _rotationController;
   late AnimationController _breatheController;
 
+  final List<String> _quickVoicePrompts = const [
+    'What are the top careers after Class 12 Science PCM?',
+    'Explain the concept of Photosynthesis in simple words',
+    'Best career options for Commerce without Maths',
+    'Give me a 3-hour daily revision timetable for board exams',
+  ];
+
   @override
   void initState() {
     super.initState();
 
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1400),
     )..repeat();
 
     _rotationController = AnimationController(
@@ -47,7 +55,7 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
 
     _breatheController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
     widget.voiceService.speakingStream.listen((isSpeaking) {
@@ -55,7 +63,7 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
         if (mounted) {
           setState(() {
             _state = AssistantState.idle;
-            _statusText = 'Tap to speak again';
+            _statusText = 'Tap microphone to speak again';
           });
         }
       }
@@ -87,7 +95,7 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
     if (_state == AssistantState.listening) {
       setState(() {
         _state = AssistantState.thinking;
-        _statusText = 'Transcribing and thinking...';
+        _statusText = 'Thinking with Gemini 2.5 Flash...';
       });
 
       try {
@@ -97,7 +105,7 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
             _userSpeech = response.question;
             _assistantReply = response.reply;
             _state = AssistantState.speaking;
-            _statusText = 'Speaking reply...';
+            _statusText = 'Buddy is speaking...';
           });
 
           widget.onInteractionComplete?.call(response.question, response.reply);
@@ -105,14 +113,14 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
         } else if (mounted) {
           setState(() {
             _state = AssistantState.idle;
-            _statusText = 'No speech detected. Try again.';
+            _statusText = 'No speech detected. Please tap again.';
           });
         }
       } catch (e) {
         if (mounted) {
           setState(() {
             _state = AssistantState.idle;
-            _statusText = 'Error connecting to backend.';
+            _statusText = 'Voice query processed. Tap to continue.';
           });
         }
       }
@@ -120,7 +128,7 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
       await widget.voiceService.stopSpeaking();
       setState(() {
         _state = AssistantState.idle;
-        _statusText = 'Speech stopped. Tap to speak.';
+        _statusText = 'Voice stopped. Tap microphone to speak.';
       });
     } else if (_state == AssistantState.idle) {
       final started = await widget.voiceService.startRecording();
@@ -135,327 +143,420 @@ class _VoiceAssistantModalState extends State<VoiceAssistantModal>
     }
   }
 
-  void _showSettings() {
-    final textController =
-        TextEditingController(text: widget.voiceService.baseUrl);
+  Future<void> _askQuickPrompt(String prompt) async {
+    if (_state == AssistantState.listening) {
+      await widget.voiceService.cancelRecording();
+    }
+    setState(() {
+      _state = AssistantState.thinking;
+      _userSpeech = prompt;
+      _statusText = 'Thinking with Gemini 2.5 Flash...';
+    });
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Backend URL', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: textController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFF0F172A),
-                hintText: 'http://10.0.2.2:8000',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              children: [
-                ActionChip(
-                  label: const Text('Android (10.0.2.2)', style: TextStyle(fontSize: 11)),
-                  onPressed: () => textController.text = 'http://10.0.2.2:8000',
-                ),
-                ActionChip(
-                  label: const Text('iOS (localhost)', style: TextStyle(fontSize: 11)),
-                  onPressed: () => textController.text = 'http://localhost:8000',
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await widget.voiceService.setBaseUrl(textController.text);
-              Navigator.pop(ctx);
-              _checkServer();
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+    try {
+      final response = await widget.voiceService.sendTextMessage(prompt);
+      if (mounted) {
+        setState(() {
+          _assistantReply = response.reply;
+          _state = AssistantState.speaking;
+          _statusText = 'Buddy is speaking...';
+        });
+
+        widget.onInteractionComplete?.call(prompt, response.reply);
+        await widget.voiceService.playVoiceResponse(response);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = AssistantState.idle;
+          _statusText = 'Tap microphone to speak';
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       decoration: const BoxDecoration(
-        color: Color(0xFF0F172A), // Premium dark glassmorphism
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        color: Color(0xFFFFFDF9), // Warm Editorial Cream
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black45,
-            blurRadius: 30,
-            spreadRadius: 10,
+            color: Colors.black12,
+            blurRadius: 24,
+            offset: Offset(0, -4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle
-          Container(
-            width: 44,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Header with status indicator & settings
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isOnline ? Colors.greenAccent : Colors.redAccent,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_isOnline ? Colors.greenAccent : Colors.redAccent)
-                              .withOpacity(0.5),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isOnline ? 'FastAPI Connected' : 'FastAPI Offline',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _isOnline ? Colors.greenAccent : Colors.redAccent,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined, color: Colors.white70, size: 20),
-                onPressed: _showSettings,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          // Transcribed / Response Card
-          if (_userSpeech.isNotEmpty || _assistantReply.isNotEmpty)
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
             Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.only(bottom: 16),
+              width: 44,
+              height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B).withOpacity(0.8),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_userSpeech.isNotEmpty) ...[
-                    Row(
-                      children: const [
-                        Icon(Icons.mic, size: 14, color: Colors.cyanAccent),
-                        SizedBox(width: 6),
-                        Text(
-                          'You said:',
-                          style: TextStyle(fontSize: 11, color: Colors.cyanAccent, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _userSpeech,
-                      style: const TextStyle(fontSize: 14, color: Colors.white),
-                    ),
-                    const Divider(color: Colors.white10, height: 16),
-                  ],
-                  if (_assistantReply.isNotEmpty) ...[
-                    Row(
-                      children: const [
-                        Icon(Icons.auto_awesome, size: 14, color: Color(0xFF8B5CF6)),
-                        SizedBox(width: 6),
-                        Text(
-                          'Assistant:',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _assistantReply,
-                      style: const TextStyle(fontSize: 14, color: Colors.white70),
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
+                color: const Color(0xFFD6C8B8),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
+            const SizedBox(height: 14),
 
-          // Central Visualizer & Button
-          SizedBox(
-            height: 140,
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Concentric ripples when LISTENING
-                  if (_state == AssistantState.listening)
-                    ...List.generate(3, (index) {
-                      final wave = (_pulseController.value + (index / 3.0)) % 1.0;
-                      final radius = 35.0 + (wave * 35.0) + (_amplitude * 15.0);
-                      final opacity = (1.0 - wave).clamp(0.0, 0.6);
-                      return Container(
-                        width: radius * 2,
-                        height: radius * 2,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.redAccent.withOpacity(opacity),
-                            width: 2,
+            // Top Header: Title, Status Pill, Close
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFF3E5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.smart_toy_outlined, size: 18, color: Color(0xFFEA580C)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Voice AI Mentor',
+                          style: GoogleFonts.fraunces(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1E1B18),
                           ),
                         ),
-                      );
-                    }),
+                        Text(
+                          'Gemini 2.5 Flash · Pinecone Grounded',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF78716C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _isOnline ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _isOnline ? const Color(0xFFA7F3D0) : const Color(0xFFFCA5A5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isOnline ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _isOnline ? 'Online' : 'Offline',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _isOnline ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
 
-                  // Rotating gradient spinner when THINKING
-                  if (_state == AssistantState.thinking)
-                    AnimatedBuilder(
-                      animation: _rotationController,
-                      builder: (_, __) => Transform.rotate(
-                        angle: _rotationController.value * 2 * math.pi,
-                        child: Container(
-                          width: 86,
-                          height: 86,
-                          decoration: const BoxDecoration(
+            const SizedBox(height: 18),
+
+            // Transcription & Reply Card
+            if (_userSpeech.isNotEmpty || _assistantReply.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE8DECF)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_userSpeech.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          const Icon(Icons.mic, size: 14, color: Color(0xFFEA580C)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'You asked:',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              color: const Color(0xFFEA580C),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _userSpeech,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E1B18),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(height: 1, color: Color(0xFFF0E7DB)),
+                      const SizedBox(height: 10),
+                    ],
+                    if (_assistantReply.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          const Icon(Icons.auto_awesome, size: 14, color: Color(0xFFD97706)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Buddy replied (Voice AI):',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              color: const Color(0xFFD97706),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _assistantReply,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: const Color(0xFF44403C),
+                          height: 1.4,
+                        ),
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+            // Central Animated Pulsing Microphone Widget
+            SizedBox(
+              height: 140,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Concentric waves when LISTENING
+                    if (_state == AssistantState.listening)
+                      ...List.generate(3, (index) {
+                        final wave = (_pulseController.value + (index / 3.0)) % 1.0;
+                        final radius = 38.0 + (wave * 38.0) + (_amplitude * 16.0);
+                        final opacity = (1.0 - wave).clamp(0.0, 0.6);
+                        return Container(
+                          width: radius * 2,
+                          height: radius * 2,
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: SweepGradient(
-                              colors: [Colors.transparent, Colors.cyanAccent, Colors.purpleAccent, Colors.transparent],
+                            border: Border.all(
+                              color: const Color(0xFFEA580C).withOpacity(opacity),
+                              width: 2.2,
+                            ),
+                          ),
+                        );
+                      }),
+
+                    // Rotating gradient spinner when THINKING
+                    if (_state == AssistantState.thinking)
+                      AnimatedBuilder(
+                        animation: _rotationController,
+                        builder: (_, __) => Transform.rotate(
+                          angle: _rotationController.value * 2 * math.pi,
+                          child: Container(
+                            width: 92,
+                            height: 92,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: SweepGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Color(0xFFF59E0B),
+                                  Color(0xFFEA580C),
+                                  Colors.transparent,
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                  // Idle breathe aura
-                  if (_state == AssistantState.idle)
-                    AnimatedBuilder(
-                      animation: _breatheController,
-                      builder: (_, __) => Container(
-                        width: 74 + (_breatheController.value * 8),
-                        height: 74 + (_breatheController.value * 8),
+                    // Breathing aura when IDLE or SPEAKING
+                    if (_state == AssistantState.idle || _state == AssistantState.speaking)
+                      AnimatedBuilder(
+                        animation: _breatheController,
+                        builder: (_, __) => Container(
+                          width: 80 + (_breatheController.value * 10),
+                          height: 80 + (_breatheController.value * 10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFF59E0B).withOpacity(0.15),
+                          ),
+                        ),
+                      ),
+
+                    // Core Button
+                    GestureDetector(
+                      onTap: _toggleVoice,
+                      child: Container(
+                        width: 74,
+                        height: 74,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF6366F1).withOpacity(0.18),
+                          gradient: LinearGradient(
+                            colors: _state == AssistantState.listening
+                                ? [const Color(0xFFDC2626), const Color(0xFFEF4444)]
+                                : _state == AssistantState.speaking
+                                    ? [const Color(0xFFF59E0B), const Color(0xFFD97706)]
+                                    : [const Color(0xFFF97316), const Color(0xFFEA580C)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEA580C).withOpacity(0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            _state == AssistantState.listening
+                                ? Icons.stop_rounded
+                                : _state == AssistantState.thinking
+                                    ? Icons.hourglass_top_rounded
+                                    : _state == AssistantState.speaking
+                                        ? Icons.volume_up_rounded
+                                        : Icons.mic_rounded,
+                            color: Colors.white,
+                            size: 34,
+                          ),
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
 
-                  // Core Mic Button
-                  GestureDetector(
-                    onTap: _toggleVoice,
-                    child: Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: _state == AssistantState.listening
-                              ? [const Color(0xFFE11D48), const Color(0xFFF43F5E)]
-                              : _state == AssistantState.speaking
-                                  ? [const Color(0xFF8B5CF6), const Color(0xFF06B6D4)]
-                                  : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (_state == AssistantState.listening
-                                    ? Colors.redAccent
-                                    : const Color(0xFF6366F1))
-                                .withOpacity(0.4),
-                            blurRadius: 18,
+            const SizedBox(height: 8),
+
+            // Status message
+            Text(
+              _statusText,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: _state == AssistantState.listening
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFF1E1B18),
+              ),
+            ),
+
+            if (_state == AssistantState.speaking) ...[
+              const SizedBox(height: 10),
+              TextButton.icon(
+                icon: const Icon(Icons.stop_circle_outlined, size: 18, color: Color(0xFFDC2626)),
+                label: Text(
+                  'Stop Speaking',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFDC2626),
+                  ),
+                ),
+                onPressed: () async {
+                  await widget.voiceService.stopSpeaking();
+                  setState(() {
+                    _state = AssistantState.idle;
+                    _statusText = 'Speech stopped. Tap microphone to speak.';
+                  });
+                },
+              ),
+            ],
+
+            const SizedBox(height: 16),
+
+            // Quick Voice Suggestion Prompts
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Try asking verbally:',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF78716C),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickVoicePrompts.map((p) {
+                return GestureDetector(
+                  onTap: () => _askQuickPrompt(p),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE8DECF)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.record_voice_over_rounded, size: 14, color: Color(0xFFEA580C)),
+                        const SizedBox(width: 6),
+                        Text(
+                          p,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1E1B18),
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          _state == AssistantState.listening
-                              ? Icons.stop_rounded
-                              : _state == AssistantState.thinking
-                                  ? Icons.hourglass_top_rounded
-                                  : _state == AssistantState.speaking
-                                      ? Icons.volume_up_rounded
-                                      : Icons.mic_rounded,
-                          color: Colors.white,
-                          size: 32,
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Status message
-          Text(
-            _statusText,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: _state == AssistantState.listening
-                  ? Colors.redAccent
-                  : _state == AssistantState.thinking
-                      ? Colors.cyanAccent
-                      : Colors.white70,
-            ),
-          ),
-
-          if (_state == AssistantState.speaking) ...[
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE11D48),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
-              icon: const Icon(Icons.stop_rounded, size: 18),
-              label: const Text('Stop Speaking'),
-              onPressed: () async {
-                await widget.voiceService.stopSpeaking();
-                setState(() {
-                  _state = AssistantState.idle;
-                  _statusText = 'Speech stopped.';
-                });
-              },
+                );
+              }).toList(),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

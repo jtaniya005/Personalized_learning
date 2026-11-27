@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 import 'state/app_settings.dart';
 import 'screens/splash_screen.dart';
@@ -8,6 +9,9 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    BrowserContextMenu.disableContextMenu();
+  } catch (_) {}
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

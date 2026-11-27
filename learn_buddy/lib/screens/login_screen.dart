@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
-import '../theme/app_theme.dart';
-import '../state/app_settings.dart';
-import '../widgets/notebook_card.dart';
-import '../widgets/app_logo.dart';
-import 'home_screen.dart';
-import 'register_screen.dart';
-import 'phone_otp_screen.dart';
-import 'student_details_screen.dart';
-import '../services/auth_service.dart';
-import '../widgets/focus_glow_wrapper.dart';
-import '../widgets/primary_glow_button.dart';
-import '../widgets/animated_scale_press.dart';
-import '../widgets/page_transitions.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
+import '../theme/app_theme.dart';
+import '../widgets/theme_decorations.dart';
+import '../widgets/page_transitions.dart';
+import 'home_screen.dart';
+import 'register_screen.dart';
+import 'student_details_screen.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   bool obscure = true;
   bool isLoading = false;
+  bool rememberMe = true;
 
   @override
   void dispose() {
@@ -89,18 +85,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _routeAfterLogin(Map<String, dynamic> user) {
+  void _routeAfterLogin(Map<String, dynamic> user) async {
     final marksheetData = user['marksheet_data'] as Map?;
     final hasCompletedMarksheet = marksheetData != null && marksheetData.isNotEmpty;
+    final hasSchool = user['school'] != null && user['school'].toString().trim().isNotEmpty;
+    final hasSubjects = user['subjects'] != null && (user['subjects'] as List).isNotEmpty;
 
-    if (!hasCompletedMarksheet) {
-      // Step 2 & 3: Details & Marksheet Screen
-      Navigator.of(context).pushReplacement(
-        FadeSlidePageRoute(
-          page: StudentDetailsScreen(initialUser: user),
-        ),
-      );
-    } else {
+    final prefs = await SharedPreferences.getInstance();
+    final hasLocalOnboarding = prefs.getBool('has_completed_onboarding') ?? false;
+
+    if (hasCompletedMarksheet || hasSchool || hasSubjects || hasLocalOnboarding) {
+      await prefs.setBool('has_completed_onboarding', true);
+      if (!mounted) return;
       // Direct to Dashboard
       Navigator.of(context).pushReplacement(
         FadeSlidePageRoute(
@@ -109,6 +105,14 @@ class _LoginScreenState extends State<LoginScreen> {
             studentName: user['name'] ?? 'Student',
             avatarIndex: user['avatar_index'] as int? ?? 0,
           ),
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      // Step 2 & 3: Details & Marksheet Screen
+      Navigator.of(context).pushReplacement(
+        FadeSlidePageRoute(
+          page: StudentDetailsScreen(initialUser: user),
         ),
       );
     }
@@ -140,203 +144,308 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.scale(
-                      scale: 0.9 + (0.1 * value),
-                      alignment: Alignment.centerLeft,
-                      child: child,
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    const AppLogo(size: 40),
-                    const SizedBox(width: 10),
-                    Text('Learn Buddy', style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 36),
-              Text(tr(context, 'login_welcome'),
-                  style: Theme.of(context).textTheme.displayLarge),
-              const SizedBox(height: 8),
-              Text(
-                tr(context, 'login_sub'),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 28),
+      backgroundColor: const Color(0xFFFFFDF9),
+      body: Stack(
+        children: [
+          // ── Top Right Sunburst Decoration ──
+          const Positioned(
+            top: 20,
+            right: 15,
+            child: SunburstWidget(size: 80),
+          ),
 
-              NotebookCard(
-                ambientGlow: true,
-                holeCount: 5,
-                padding: const EdgeInsets.fromLTRB(28, 24, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(tr(context, 'login_title'), style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 16),
-                    FocusGlowWrapper(
-                      child: TextField(
-                        controller: emailController,
-                        decoration: InputDecoration(
-                          hintText: tr(context, 'email_hint'),
-                          prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
+          // ── Bottom Wavy Gradient Shape ──
+          const Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: WarmWaveWidget(height: 60),
+          ),
+
+          // ── Form Content ──
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Back Arrow Button
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Color(0xFF1E1B18)),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Title: Welcome Back!
+                  Text(
+                    'Welcome Back!',
+                    style: GoogleFonts.fraunces(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1E1B18),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Subtitle
+                  Text(
+                    'Continue your learning journey\nwith Learn Buddy',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF6B655B),
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Input 1: Email or Student ID
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE8DECF), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E1B18).withOpacity(0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: emailController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => _loginWithEmail(),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14.5, color: const Color(0xFF1E1B18)),
+                      decoration: InputDecoration(
+                        hintText: 'Email or Student ID',
+                        hintStyle: GoogleFonts.plusJakartaSans(fontSize: 14, color: const Color(0xFF9CA3AF)),
+                        prefixIcon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E1B18), size: 20),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    FocusGlowWrapper(
-                      child: TextField(
-                        controller: passwordController,
-                        obscureText: obscure,
-                        decoration: InputDecoration(
-                          hintText: tr(context, 'password_hint'),
-                          prefixIcon:
-                              const Icon(Icons.lock_outline_rounded, size: 20),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              obscure
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              size: 20,
-                            ),
-                            onPressed: () => setState(() => obscure = !obscure),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Input 2: Password
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE8DECF), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E1B18).withOpacity(0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: passwordController,
+                      obscureText: obscure,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _loginWithEmail(),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14.5, color: const Color(0xFF1E1B18)),
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        hintStyle: GoogleFonts.plusJakartaSans(fontSize: 14, color: const Color(0xFF9CA3AF)),
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF1E1B18), size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: const Color(0xFF6B7280),
+                            size: 20,
+                          ),
+                          onPressed: () => setState(() => obscure = !obscure),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Remember me & Forgot Password Row
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Checkbox(
+                          value: rememberMe,
+                          activeColor: const Color(0xFFD97706),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.4),
+                          onChanged: (v) => setState(() => rememberMe = v ?? true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Remember me',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF4B5563),
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {},
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                        child: Text(
+                          'Forgot Password?',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFD97706),
                           ),
                         ),
                       ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        child: Text(tr(context, 'forgot_password'),
-                            style: Theme.of(context).textTheme.bodyMedium),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: PrimaryGlowButton(
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _loginWithEmail,
-                          child: isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(tr(context, 'auth_login')),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: AppColors.rule)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(tr(context, 'or_continue_with'),
-                        style: Theme.of(context).textTheme.labelSmall),
-                  ),
-                  Expanded(child: Divider(color: AppColors.rule)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _SocialButton(
-                      label: tr(context, 'google'),
-                      icon: Icons.g_mobiledata_rounded,
-                      onTap: isLoading ? () {} : _loginWithGoogle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SocialButton(
-                      label: tr(context, 'phone_otp'),
-                      icon: Icons.phone_android_rounded,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PhoneOtpScreen(isRegister: false),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              Center(
-                child: RichText(
-                  text: TextSpan(
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    children: [
-                      TextSpan(text: tr(context, 'new_here')),
-                      TextSpan(
-                        text: tr(context, 'create_account_link'),
-                        style: const TextStyle(
-                          color: AppColors.skyInk,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        recognizer: (TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.of(context).push(
-                              FadeSlidePageRoute(
-                                  page: const RegisterScreen()),
-                            );
-                          }),
-                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 26),
+
+                  // Primary Button: Log In ➔
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _loginWithEmail,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E1B18),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Log In',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_forward_rounded, size: 18),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+
+                  // "or" Divider
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: Color(0xFFE5D5BD), thickness: 1)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Text(
+                          'or',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider(color: Color(0xFFE5D5BD), thickness: 1)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Continue with Google Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton(
+                      onPressed: isLoading ? null : _loginWithGoogle,
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFFE8DECF), width: 1.2),
+                        elevation: 0.5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(shape: BoxShape.circle),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'G',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF4285F4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Continue with Google',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1E1B18),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Footer Link: New student? Create Account
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pushReplacement(
+                        FadeSlidePageRoute(page: const RegisterScreen()),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13.5,
+                            color: const Color(0xFF6B655B),
+                          ),
+                          children: const [
+                            TextSpan(text: 'New student? '),
+                            TextSpan(
+                              text: 'Create Account',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFD97706),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SocialButton(
-      {required this.label, required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedScalePress(
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20, color: AppColors.ink),
-        label: Text(label,
-            style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.w600)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          side: BorderSide(color: AppColors.rule),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
+        ],
       ),
     );
   }

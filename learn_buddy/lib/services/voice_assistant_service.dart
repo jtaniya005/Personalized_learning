@@ -11,18 +11,21 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'auth_service.dart';
 
 class VoiceResponse {
   final String question;
   final String reply;
   final String? audioBase64;
   final String ttsProvider;
+  final bool careerGrounded;
 
   VoiceResponse({
     required this.question,
     required this.reply,
     this.audioBase64,
     required this.ttsProvider,
+    this.careerGrounded = false,
   });
 
   factory VoiceResponse.fromJson(Map<String, dynamic> json, {String? defaultQuestion}) {
@@ -31,6 +34,7 @@ class VoiceResponse {
       reply: json['reply'] as String? ?? '',
       audioBase64: json['audio_base64'] as String?,
       ttsProvider: json['tts_provider'] as String? ?? 'browser',
+      careerGrounded: json['career_grounded'] as bool? ?? false,
     );
   }
 }
@@ -63,16 +67,33 @@ class VoiceAssistantService {
   Stream<double> get amplitudeStream => _amplitudeController.stream;
 
   static String getDefaultBaseUrl() {
-    if (kIsWeb) return 'http://localhost:8000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-    return 'http://localhost:8000';
+    if (kIsWeb) return 'http://localhost:8001';
+    if (Platform.isAndroid) return 'http://10.0.2.2:8001';
+    return 'http://localhost:8001';
   }
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _baseUrl = prefs.getString(_keyBaseUrl) ?? getDefaultBaseUrl();
+    final savedUrl = prefs.getString(_keyBaseUrl);
+    if (savedUrl != null && savedUrl.trim().startsWith('http')) {
+      _baseUrl = savedUrl.trim();
+    } else {
+      _baseUrl = getDefaultBaseUrl();
+    }
     _sessionId = prefs.getString(_keySessionId) ?? const Uuid().v4();
-    prefs.setString(_keySessionId, _sessionId);
+    await prefs.setString(_keySessionId, _sessionId);
+
+    // Auto-detect live port (8001 or 8000)
+    for (final port in [8001, 8000]) {
+      try {
+        final host = kIsWeb ? 'http://localhost:$port' : (Platform.isAndroid ? 'http://10.0.2.2:$port' : 'http://127.0.0.1:$port');
+        final res = await _client.get(Uri.parse('$host/api/health')).timeout(const Duration(milliseconds: 700));
+        if (res.statusCode == 200) {
+          _baseUrl = host;
+          break;
+        }
+      } catch (_) {}
+    }
 
     _initAudioListeners();
   }
@@ -219,25 +240,50 @@ class VoiceAssistantService {
   Future<VoiceResponse> sendTextMessage(String message) async {
     if (_isSpeaking) await stopSpeaking();
 
-    final uri = Uri.parse('$_baseUrl/api/chat');
-    final response = await _client
-        .post(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Session-ID': _sessionId,
-          },
-          body: jsonEncode({'message': message}),
-        )
-        .timeout(const Duration(seconds: 35));
+    final user = AuthService.currentUser;
+    final payload = {
+      'message': message,
+      'user_id': user?['id'] ?? _sessionId,
+      'name': user?['name'] ?? 'Student',
+      'student_class': user?['student_class'] ?? 10,
+      'stream': user?['stream'],
+      'performance_category': user?['performance_category'] ?? 'average',
+      'weak_subjects': user?['weak_subjects'] ?? [],
+      'language': 'hi',
+    };
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return VoiceResponse.fromJson(data, defaultQuestion: message);
-    } else {
-      throw Exception('Chat server error: ${response.statusCode}');
+    // Try primary base URL, then fallback port if needed
+    final candidateUrls = [
+      _baseUrl,
+      _baseUrl.contains('8001') ? _baseUrl.replaceAll('8001', '8000') : _baseUrl.replaceAll('8000', '8001'),
+    ];
+
+    for (final base in candidateUrls) {
+      try {
+        final uri = Uri.parse('$base/api/chat');
+        final response = await _client
+            .post(
+              uri,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Session-ID': _sessionId,
+              },
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 40));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          _baseUrl = base;
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          return VoiceResponse.fromJson(data, defaultQuestion: message);
+        }
+      } catch (e) {
+        debugPrint('[VoiceAssistantService] attempt on $base failed: $e');
+      }
     }
+
+    throw Exception('Failed to connect to backend on port 8000 or 8001.');
   }
 
   /// Clears session history via POST /api/reset
@@ -274,7 +320,15 @@ class VoiceAssistantService {
         if (clean.contains(',')) clean = clean.split(',').last;
         final bytes = base64Decode(clean);
 
-        await _player.play(BytesSource(bytes));
+        if (kIsWeb) {
+          try {
+            await _player.play(BytesSource(bytes));
+          } catch (_) {
+            await _player.play(UrlSource('data:audio/mp3;base64,$clean'));
+          }
+        } else {
+          await _player.play(BytesSource(bytes));
+        }
         return;
       } catch (e) {
         debugPrint('Server audio failed, falling back to TTS: $e');
