@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _initializeApp() async {
     // Wait for BOTH the minimum splash duration (2.8s) and the first auth state
-    final results = await Future.wait([
+    final results = await Future.wait<dynamic>([
       FirebaseAuth.instance.authStateChanges().first,
       Future.delayed(const Duration(milliseconds: 2800)),
     ]);
