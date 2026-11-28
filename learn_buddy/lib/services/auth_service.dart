@@ -5,20 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../config/api_config.dart';
 
 class AuthService {
   static String? _cachedToken;
   static Map<String, dynamic>? _cachedUser;
 
-  static String _activePort = '8001';
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:$_activePort/api/v1';
-    if (Platform.isAndroid) return 'http://10.0.2.2:$_activePort/api/v1';
-    return 'http://127.0.0.1:$_activePort/api/v1';
-  }
+  static String get baseUrl => ApiConfig.apiV1Url;
 
   static void setActivePort(String port) {
-    _activePort = port;
+    final intPort = int.tryParse(port) ?? ApiConfig.dockerPort;
+    ApiConfig.setBaseUrl(ApiConfig.getLocalBaseUrl(port: intPort));
   }
 
   static Map<String, dynamic>? get currentUser => _cachedUser;

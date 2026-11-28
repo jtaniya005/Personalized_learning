@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/voice_assistant_controller.dart';
 import '../theme/voice_app_theme.dart';
+import '../config/api_config.dart';
 import 'glass_card.dart';
 
 class VoiceSettingsDialog extends StatefulWidget {
@@ -136,9 +137,11 @@ class _VoiceSettingsDialogState extends State<VoiceSettingsDialog> {
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  _buildPresetChip('Android (10.0.2.2)', 'http://10.0.2.2:8000'),
-                  _buildPresetChip('iOS / PC (localhost)', 'http://localhost:8000'),
-                  _buildPresetChip('LAN (192.168.1.100)', 'http://192.168.1.100:8000'),
+                  _buildPresetChip('Cloud AI (cleariq.freekey.ai:9009)', 'https://cleariq.freekey.ai:9009'),
+                  _buildPresetChip('Local Docker (Port 2500)', ApiConfig.getLocalBaseUrl(port: 2500)),
+                  _buildPresetChip('PC Local (localhost:2500)', 'http://localhost:2500'),
+                  _buildPresetChip('Android (10.0.2.2:2500)', 'http://10.0.2.2:2500'),
+                  _buildPresetChip('Local Dev (Port 8000)', 'http://localhost:8000'),
                 ],
               ),
               if (_testResult != null) ...[

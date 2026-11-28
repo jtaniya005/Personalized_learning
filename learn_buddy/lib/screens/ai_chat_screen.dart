@@ -134,7 +134,7 @@ class _AiChatScreenState extends State<AiChatScreen> with SingleTickerProviderSt
       setState(() {
         isTyping = false;
         messages.add(ChatMessage(
-          "Arre waah $studentName! Maine aapka doubt (\"$trimmed\") note kar liya hai. Abhi backend se connect karne me problem aayi ($e). Kripya check karein ki FastAPI backend 'http://localhost:8000' par live run ho raha hai.",
+          "Arre waah $studentName! Maine aapka doubt (\"$trimmed\") note kar liya hai. Abhi backend se connect karne me problem aayi ($e). Kripya check karein ki FastAPI backend '${_voiceService.baseUrl}' par live run ho raha hai.",
           false,
         ));
       });

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import '../config/api_config.dart';
 
 class VoicePreferencesService {
   static const String _keySessionId = 'voice_assistant_session_id';
@@ -20,13 +21,7 @@ class VoicePreferencesService {
   }
 
   static String getDefaultBaseUrl() {
-    if (kIsWeb) {
-      return 'http://localhost:8000';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-    return 'http://localhost:8000';
+    return ApiConfig.baseUrl;
   }
 
   String getSessionId() {
@@ -49,10 +44,8 @@ class VoicePreferencesService {
   }
 
   Future<void> setBaseUrl(String url) async {
-    var cleaned = url.trim();
-    if (cleaned.endsWith('/')) {
-      cleaned = cleaned.substring(0, cleaned.length - 1);
-    }
+    final cleaned = ApiConfig.cleanUrl(url);
+    await ApiConfig.setBaseUrl(cleaned);
     await _prefs.setString(_keyBaseUrl, cleaned);
   }
 

@@ -14,11 +14,12 @@ httpx
 pytesseract
 opencv-python-headless
 pymupdf
+pillow
 numpy
 
-langgraph
-langchain
 chromadb
 openai
 pinecone
+google-genai
+edge-tts
 sentence-transformers

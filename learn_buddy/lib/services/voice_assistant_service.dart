@@ -12,6 +12,7 @@ import 'package:record/record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'auth_service.dart';
+import '../config/api_config.dart';
 
 class VoiceResponse {
   final String question;
@@ -67,32 +68,32 @@ class VoiceAssistantService {
   Stream<double> get amplitudeStream => _amplitudeController.stream;
 
   static String getDefaultBaseUrl() {
-    if (kIsWeb) return 'http://localhost:8001';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8001';
-    return 'http://localhost:8001';
+    return ApiConfig.baseUrl;
   }
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString(_keyBaseUrl);
     if (savedUrl != null && savedUrl.trim().startsWith('http')) {
-      _baseUrl = savedUrl.trim();
+      _baseUrl = ApiConfig.cleanUrl(savedUrl);
     } else {
-      _baseUrl = getDefaultBaseUrl();
+      _baseUrl = ApiConfig.baseUrl;
     }
     _sessionId = prefs.getString(_keySessionId) ?? const Uuid().v4();
     await prefs.setString(_keySessionId, _sessionId);
 
-    // Auto-detect live port (8001 or 8000)
-    for (final port in [8001, 8000]) {
-      try {
-        final host = kIsWeb ? 'http://localhost:$port' : (Platform.isAndroid ? 'http://10.0.2.2:$port' : 'http://127.0.0.1:$port');
-        final res = await _client.get(Uri.parse('$host/api/health')).timeout(const Duration(milliseconds: 700));
-        if (res.statusCode == 200) {
-          _baseUrl = host;
-          break;
-        }
-      } catch (_) {}
+    // Auto-detect local live port only if using a local host
+    if (!_baseUrl.startsWith('https://')) {
+      for (final port in [2500, 8000, 8001]) {
+        try {
+          final host = ApiConfig.getLocalBaseUrl(port: port);
+          final res = await _client.get(Uri.parse('$host/api/health')).timeout(const Duration(milliseconds: 700));
+          if (res.statusCode == 200) {
+            _baseUrl = host;
+            break;
+          }
+        } catch (_) {}
+      }
     }
 
     _initAudioListeners();
@@ -121,13 +122,9 @@ class VoiceAssistantService {
   }
 
   Future<void> setBaseUrl(String url) async {
-    var cleaned = url.trim();
-    if (cleaned.endsWith('/')) {
-      cleaned = cleaned.substring(0, cleaned.length - 1);
-    }
+    final cleaned = ApiConfig.cleanUrl(url);
     _baseUrl = cleaned;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyBaseUrl, _baseUrl);
+    await ApiConfig.setBaseUrl(cleaned);
   }
 
   Future<bool> checkHealth() async {

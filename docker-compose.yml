@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: ./learn_buddy_backend
+      dockerfile: Dockerfile
+    container_name: learn_buddy_backend
+    restart: always
+    ports:
+      - "2500:2500"
+    env_file:
+      - ./learn_buddy_backend/.env
+    environment:
+      - TESSERACT_CMD=/usr/bin/tesseract
+      - PORT=2500
+    volumes:
+      - chroma_data:/app/chroma_data
+
+volumes:
+  chroma_data:
